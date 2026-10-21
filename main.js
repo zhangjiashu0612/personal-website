@@ -19,6 +19,7 @@ if (entry) entry.querySelectorAll('button').forEach(b => b.addEventListener('cli
 }));
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const coarse = matchMedia('(pointer: coarse)').matches;
+let hovered = null, selected = null, hoverSource = null, hoveredPiece = null;   // declared early: the word switch runs even when the 3D part never starts
 
 const PAPER = 0xF2EDE4, INK = 0x2E2C29, NEUTRAL = 0xD4CDC0, ACCENT = 0xB5362A;
 const CSS = { ink: '#2E2C29', accent: '#B5362A', light: '#A89F94', mid: '#6B6560', soft: 'rgba(181,54,42,0.12)', sheet: '#F8F4EC', grid: 'rgba(46,44,41,0.06)', gridMajor: 'rgba(46,44,41,0.13)' };
@@ -214,7 +215,7 @@ async function load() {
 }
 
 // ---------- hover / select ----------
-const raycaster = new THREE.Raycaster(); const ndc = new THREE.Vector2(); let hovered = null, selected = null, hoverSource = null, hoveredPiece = null;
+const raycaster = new THREE.Raycaster(); const ndc = new THREE.Vector2();
 function paint(it, hot) { it.pieces.forEach(p => { p.mesh.material = it.kind === 'project' ? (hot ? it.hot : it.mat) : (hot ? matMissingHot : matMissing); }); if (it.kind === 'project') it.outline.forEach(o => o.visible = hot); }
 function hover(it, source) {
   if (it === hovered) return;
