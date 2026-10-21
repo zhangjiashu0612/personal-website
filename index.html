@@ -74,7 +74,9 @@
       <h2>Try it</h2>
       <p>The brain on the right is about to do a boring task. Somewhere in it a lapse is building. You are the lever: catch each lapse before it happens, with one tap. Forty seconds.</p>
       <p><button class="btn" id="run-btn">Run a session</button></p>
-      <p class="fine">A toy model with compressed time, drawn not recorded. The point is the count at the end.</p>
+      <p>Then decide where the sensor should go. Drop an electrode anywhere on the brain and see what that spot can tell you before a lapse. Three tries, then compare.</p>
+      <p><button class="btn" id="probe-btn">Place the electrode</button></p>
+      <p class="fine">Both are toys with compressed time, drawn not recorded. The point is the count at the end of one, and the choice at the end of the other.</p>
     </section>
 
     <section id="missing" class="missing">
@@ -112,7 +114,7 @@
       <button data-view="below">Below</button>
       <button data-view="inside">Inside</button>
     </div>
-    <button class="runmini" id="run-mini">Run a session</button>
+    <div class="minis"><button class="runmini" id="run-mini">Run a session</button><button class="runmini" id="probe-mini">Place the electrode</button></div>
     <div class="game" id="game" hidden>
       <div class="stream" id="stream" aria-hidden="true"></div>
       <div class="score" id="score"></div>
@@ -120,6 +122,12 @@
       <canvas class="trace" id="trace" height="96"></canvas>
       <button class="tapbtn" id="tapbtn">tap</button>
       <div class="result" id="result" hidden></div>
+    </div>
+    <div class="probe" id="probe" hidden>
+      <div class="probe-head"><span id="probe-title">Drop an electrode on the brain</span><span class="probe-count" id="probe-count">0 of 3</span></div>
+      <div class="probe-rows" id="probe-rows"></div>
+      <div class="probe-actions"><button id="probe-compare" disabled>Compare</button><button id="probe-reset">Clear</button><button id="probe-close">Close</button></div>
+      <div class="probe-verdict" id="probe-verdict" hidden></div>
     </div>
     <article class="card" id="card" aria-live="polite">
       <button class="card-close" id="card-close" aria-label="Close">×</button>

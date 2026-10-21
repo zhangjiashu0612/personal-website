@@ -239,7 +239,7 @@ function showCard(it, full) {
 el.cardClose.addEventListener('click', () => select(null));
 addEventListener('keydown', e => {
   if (G.on && (e.key === ' ' || e.code === 'Space')) { e.preventDefault(); tap(); return; }
-  if (e.key === 'Escape') { if (G.on) { endGame(true); return; } select(null); }
+  if (e.key === 'Escape') { if (G.on) { endGame(true); return; } if (E.on) { endProbe(); return; } select(null); }
   if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const i = selected ? selected.index : -1; const n = items.length; select(items[(i + (e.key === 'ArrowRight' ? 1 : n - 1) + n) % n]); }
 });
 
@@ -265,6 +265,7 @@ canvas.addEventListener('pointermove', e => {
     else if (pointers.size === 2) { const [a, b] = [...pointers.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch0) goal.r = Math.min(fit * 1.7, Math.max(fit * 0.45, r0 * pinch0 / d)); }
     return;
   }
+  if (E.on) { if (!coarse) probeHover(e.clientX, e.clientY); return; }
   if (coarse) return;
   const pc = pick(e.clientX, e.clientY); hoveredPiece = pc;
   hover(pc && pc.owner ? pc.owner : null, 'canvas');
@@ -278,14 +279,14 @@ const endPointer = e => {
   pointers.delete(e.pointerId);
   if (pointers.size === 0) {
     canvas.classList.remove('dragging');
-    if (dragging && moved < 6) { const pc = pick(e.clientX, e.clientY); if (pc && pc.owner) select(pc.owner === selected ? null : pc.owner); else if (selected) select(null); }
+    if (dragging && moved < 6) { if (E.on) probePlace(e.clientX, e.clientY); else { const pc = pick(e.clientX, e.clientY); if (pc && pc.owner) select(pc.owner === selected ? null : pc.owner); else if (selected) select(null); } }
     dragging = false;
   }
   pinch0 = 0;
 };
 canvas.addEventListener('pointerup', endPointer); canvas.addEventListener('pointercancel', endPointer);
 let lastDown = 0; canvas.addEventListener('pointerdown', () => { lastDown = performance.now(); });
-canvas.addEventListener('click', e => { if (performance.now() - lastDown < 600) return; if (assembling) { finishAssembly(); return; } const pc = pick(e.clientX, e.clientY); if (pc && pc.owner) select(pc.owner === selected ? null : pc.owner); else if (selected) select(null); });
+canvas.addEventListener('click', e => { if (performance.now() - lastDown < 600) return; if (assembling) { finishAssembly(); return; } if (E.on) { probePlace(e.clientX, e.clientY); return; } const pc = pick(e.clientX, e.clientY); if (pc && pc.owner) select(pc.owner === selected ? null : pc.owner); else if (selected) select(null); });
 canvas.addEventListener('pointerleave', () => { if (!coarse && hoverSource === 'canvas') { hover(null, 'canvas'); el.tip.classList.remove('on'); } });
 canvas.addEventListener('wheel', e => { e.preventDefault(); goal.r = Math.min(fit * 1.7, Math.max(fit * 0.45, goal.r * (1 + e.deltaY * 0.0012))); lastInput = performance.now(); el.hint.classList.add('off'); }, { passive: false });
 
@@ -314,7 +315,7 @@ async function assemble(mats) {
     missing.forEach(it => it.marker.classList.add('on'));
     Object.assign(cam, { theta: -2.2, phi: 1.15, r: fit, tx: 0, ty: 0, tz: 0 }); Object.assign(goal, { theta: -2.2, phi: 1.15, r: fit, tx: 0, ty: 0, tz: 0 });
     el.caption.classList.remove('on'); el.counter.textContent = `${projects.length} pieces placed · ${missing.length} missing`;
-    assembling = false; lastInput = performance.now() - 2500; $('#run-mini').classList.add('on');
+    assembling = false; lastInput = performance.now() - 2500; $('#run-mini').classList.add('on'); $('#probe-mini').classList.add('on');
   };
   finishAssembly = finalState;
   if (reduceMotion) { finalState(); return; }
@@ -396,7 +397,7 @@ let gameMats = null, savedCam = null;
 function dmnItems() { return items.filter(i => ['a3', 'hcp'].includes(i.key)); }
 function visItems() { return items.filter(i => i.key === 'ssvep'); }
 function startGame() {
-  if (G.on) return; if (assembling) finishAssembly();
+  if (G.on) return; if (assembling) finishAssembly(); if (E.on) endProbe();
   if (selected) { paint(selected, false); selected = null; el.card.classList.remove('on', 'selected'); }
   hover(null, 'game');
   Object.assign(G, { on: true, t: 0, taps: 0, hits: 0, misses: 0, fas: 0, leads: [], drift: 0, flash: 0, samples: [], lastSample: 0, streamT: 0, lapses: [] });
@@ -485,6 +486,103 @@ function endGame(aborted) {
 }
 $('#run-btn').addEventListener('click', startGame); $('#run-mini').addEventListener('click', startGame); gm.tapbtn.addEventListener('pointerdown', e => { e.preventDefault(); tap(); });
 
+
+// ---------- place the electrode: where should the one sensor go? ----------
+// A cartoon of the literature, not data: each scalp area gets a lead time, how many lapses it shows, and its usual noise.
+const SITES = {
+  temple:   { test: /pars(orbitalis|triangularis|opercularis)|temporalpole/, name: 'the temple', lead: 2.0, vis: 0.85, noise: 0.35, art: 'jaw muscle now and then', sig: 'slow' },
+  frontal:  { test: /superiorfrontal|middlefrontal|frontalpole|lateralorbitofrontal/, name: 'the forehead', lead: 1.8, vis: 0.7, noise: 0.5, art: 'every blink', sig: 'slow' },
+  occipital:{ test: /lateraloccipital|cuneus|pericalcarine|lingual/, name: 'the back of the head', lead: 0.9, vis: 0.6, noise: 0.25, art: 'clean, but alpha rises late', sig: 'alpha' },
+  parietal: { test: /parietal|supramarginal|precuneus|paracentral/, name: 'the crown', lead: 1.2, vis: 0.55, noise: 0.3, art: 'quiet', sig: 'slow' },
+  central:  { test: /precentral|postcentral/, name: 'the top, over the motor strip', lead: 0.6, vis: 0.3, noise: 0.3, art: 'mu rhythm, little warning', sig: 'mu' },
+  temporal: { test: /middletemporal|inferiortemporal|superiortemporal|bankssts|transversetemporal|fusiform/, name: 'above the ear', lead: 1.4, vis: 0.5, noise: 0.75, art: 'chewing and clenching', sig: 'muscle' }
+};
+function siteOf(piece) { const r = piece.name.split('-')[1]; for (const k in SITES) if (SITES[k].test.test(r)) return { key: k, ...SITES[k] }; return null; }
+const E = { on: false, placed: [] };
+const pb = { root: $('#probe'), rows: $('#probe-rows'), count: $('#probe-count'), compare: $('#probe-compare'), reset: $('#probe-reset'), close: $('#probe-close'), verdict: $('#probe-verdict'), title: $('#probe-title') };
+const note = document.createElement('div'); note.className = 'probe-note'; stage.appendChild(note);
+let noteTimer = 0; function say(msg) { note.textContent = msg; note.classList.add('on'); clearTimeout(noteTimer); noteTimer = setTimeout(() => note.classList.remove('on'), 1800); }
+const cupMat = new THREE.MeshStandardMaterial({ color: srgb(0xD9B25A), metalness: 0.85, roughness: 0.3 });
+const cupGeo = new THREE.CylinderGeometry(0.045, 0.05, 0.02, 24); cupGeo.rotateX(Math.PI / 2);
+const cursorCup = new THREE.Mesh(cupGeo, cupMat.clone()); cursorCup.material.transparent = true; cursorCup.material.opacity = 0.7; cursorCup.visible = false; scene.add(cursorCup);
+const up0 = new THREE.Vector3(0, 0, 1);
+function placeCup(mesh, hit) { mesh.position.copy(hit.point).addScaledVector(hit.face.normal, 0.012); mesh.quaternion.setFromUnitVectors(up0, hit.face.normal); }
+function hitAt(x, y) {
+  const b = canvas.getBoundingClientRect(); ndc.set(((x - b.left) / b.width) * 2 - 1, -((y - b.top) / b.height) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  return raycaster.intersectObjects(meshes.filter(m => m.visible && m.parent.parent.visible), false)[0] || null;
+}
+function startProbe() {
+  if (E.on) return; if (G.on) endGame(true); if (assembling) finishAssembly();
+  if (selected) { paint(selected, false); selected = null; el.card.classList.remove('on', 'selected'); }
+  hover(null, 'probe'); if (insideOn) { insideOn = false; hemis.R.group.visible = true; }
+  E.on = true; E.placed = []; stage.classList.add('probing'); pb.root.hidden = false; pb.verdict.hidden = true; pb.rows.innerHTML = ''; pb.compare.disabled = true; pb.count.textContent = '0 of 3';
+  pb.title.textContent = coarse ? 'Tap the brain to drop an electrode' : 'Drop an electrode on the brain';
+  savedCam = { ...goal }; flyTo({ theta: -2.0, phi: 1.25, r: fit, tx: 0, ty: 0, tz: 0 }, 900);
+  stage.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+}
+function probeHover(x, y) {
+  const h = E.on ? hitAt(x, y) : null;
+  cursorCup.visible = !!h && E.placed.length < 3;
+  if (h) placeCup(cursorCup, h);
+}
+function probePlace(x, y) {
+  const h = hitAt(x, y); if (!h) return;
+  if (E.placed.length >= 3) { say('Three is enough. Compare them.'); return; }
+  const piece = h.object.userData.piece, site = siteOf(piece);
+  if (!site) { say('No scalp above this spot'); return; }
+  const cup = new THREE.Mesh(cupGeo, cupMat); placeCup(cup, h); scene.add(cup);
+  const label = document.createElement('div'); label.className = 'e'; label.textContent = E.placed.length + 1; el.labels.appendChild(label);
+  const entry = { site, piece, cup, label, anchor: cup.position.clone(), normal: h.face.normal.clone(), n: E.placed.length + 1 };
+  E.placed.push(entry); addProbeRow(entry);
+  pb.count.textContent = `${E.placed.length} of 3`; pb.compare.disabled = E.placed.length < 2;
+  cursorCup.visible = false;
+}
+function addProbeRow(e) {
+  const row = document.createElement('div'); row.className = 'probe-row';
+  const shown = Math.round(e.site.vis * 8);
+  row.innerHTML = `<span class="n">${e.n}</span><div><div class="probe-site">${prettyRegion(e.piece.name)} · ${e.site.name}</div><canvas></canvas><div class="probe-stats">warning <b>${e.site.lead.toFixed(1)} s</b> ahead · <b>${shown} of 8</b> lapses visible · ${e.site.art}</div></div>`;
+  pb.rows.appendChild(row); requestAnimationFrame(() => drawProbe(row.querySelector('canvas'), e.site));
+}
+function drawProbe(cv, site) {
+  const dpr = Math.min(devicePixelRatio || 1, 2), W = cv.clientWidth || 300, H = cv.clientHeight || 44; cv.width = W * dpr; cv.height = H * dpr;
+  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
+  const rnd = mulberry32(3 + Math.round(site.lead * 10)), noise = () => rnd() + rnd() + rnd() - 1.5;
+  const span = 6, lapseT = 4.6, x = t => t / span * W, y0 = H * 0.5, pts = []; let ns = 0;
+  for (let i = 0; i < W; i++) {
+    const t = i / W * span; ns = ns * 0.85 + noise() * site.noise * 0.9;
+    let v = ns * 0.3 + Math.sin(2 * Math.PI * 10 * t) * (site.sig === 'alpha' ? 0.25 + (t > lapseT - site.lead ? 0.45 * Math.min(1, (t - lapseT + site.lead) / site.lead) : 0) : 0.1);
+    const k = (t - (lapseT - site.lead)) / site.lead;
+    if (site.sig === 'slow' && k > 0 && t < lapseT + 0.3) v += Math.sin(2 * Math.PI * 1.3 * (t - lapseT)) * Math.min(1, k) * 0.9 * site.vis;
+    if (site.sig === 'mu') v += Math.sin(2 * Math.PI * 11 * t) * 0.3 * (rnd() < 0.5 ? 1 : 0.3);
+    if (site.sig === 'muscle') v += (rnd() - 0.5) * 1.2 * (Math.sin(t * 1.7) > 0.3 ? 1 : 0.2);
+    if (site.key === 'frontal' && (Math.abs(t - 1.1) < 0.12 || Math.abs(t - 3.3) < 0.12)) v += 1.6 * Math.cos((t - (t < 2 ? 1.1 : 3.3)) / 0.12 * Math.PI / 2);
+    pts.push([x(t), y0 - v * H * 0.26]);
+  }
+  c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.strokeStyle = '#1F231F'; c.lineWidth = 1.1; c.stroke();
+  c.fillStyle = 'rgba(196,87,58,0.12)'; c.fillRect(x(lapseT - site.lead), 2, x(site.lead), H - 4);
+  c.fillStyle = '#C4573A'; c.fillRect(x(lapseT), 2, 1, H - 4); c.font = '10px "Albert Sans", sans-serif'; c.fillText('lapse', x(lapseT) + 4, H - 4);
+}
+function probeVerdict() {
+  const score = e => e.site.vis * (0.5 + e.site.lead / 2.5) - e.site.noise * 0.3;
+  const ranked = [...E.placed].sort((a, b) => score(b) - score(a)); const best = ranked[0];
+  const isTemple = best.site.key === 'temple';
+  const plain = mode === 'plain';
+  pb.verdict.innerHTML = `<p class="v-big">Best of your three: <em>${best.n}</em>, ${best.site.name}.</p>
+    <p>${isTemple ? (plain ? 'That is where FocusKit puts its one sensor: under the arm of the glasses, where the warning comes earliest without blinks in the way.' : 'That is where FocusKit puts its one electrode: the temple, under the arm of a frame, where the pre-lapse slow waves arrive early and blink artefact is small.')
+      : (plain ? `A fair pick. The temple would have warned you earlier and with fewer blinks in the way, which is why FocusKit puts its one sensor there.` : `Reasonable. The temple, under the arm of a frame, warns earlier with less blink artefact, which is why FocusKit's one electrode sits there.`)}</p>
+    <p class="r-fine">${plain ? 'A cartoon, not data. The honest part: nobody has shown this works dry, on a real head, outside a lab. That is the readout piece.' : 'A cartoon of the literature, not data. The open question is whether a single dry temple channel keeps this warning outside the lab. That is the readout piece.'}</p>`;
+  pb.verdict.hidden = false;
+}
+function clearProbe() { E.placed.forEach(e => { scene.remove(e.cup); e.label.remove(); }); E.placed = []; pb.rows.innerHTML = ''; pb.verdict.hidden = true; pb.compare.disabled = true; pb.count.textContent = '0 of 3'; }
+function endProbe() { if (!E.on) return; clearProbe(); E.on = false; cursorCup.visible = false; stage.classList.remove('probing'); pb.root.hidden = true; if (savedCam) flyTo(savedCam, 900); }
+function placeProbeLabels() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  for (const e of E.placed) { v3.copy(e.anchor); camDir.copy(camera.position).sub(v3).normalize(); const facing = camDir.dot(e.normal); v3.project(camera); e.label.style.left = ((v3.x + 1) / 2 * w) + 'px'; e.label.style.top = ((1 - v3.y) / 2 * h) + 'px'; e.label.style.opacity = facing > 0 ? 1 : 0.15; }
+}
+$('#probe-btn').addEventListener('click', startProbe); $('#probe-mini').addEventListener('click', startProbe);
+pb.compare.addEventListener('click', probeVerdict); pb.reset.addEventListener('click', clearProbe); pb.close.addEventListener('click', endProbe);
+
 // ---------- main loop ----------
 function resize() { const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); if (meshes.length) computeFit(); }
 new ResizeObserver(resize).observe(stage); resize();
@@ -497,7 +595,7 @@ function frame(now) {
   const idle = (now - lastInput) / 1000 > 3 && !selected && !assembling && !reduceMotion;
   const swayGoal = idle ? Math.sin(now * 0.00035) * 0.16 : 0;
   sway += (swayGoal - sway) * (1 - Math.pow(idle ? 0.3 : 0.02, dt));
-  applyCamera(); placeLabels();
+  applyCamera(); placeLabels(); placeProbeLabels();
   renderer.render(scene, camera);
 }
 
