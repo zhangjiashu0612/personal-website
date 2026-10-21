@@ -12,6 +12,11 @@ const el = {
   signal: $('#card-signal'), signalLabel: $('#card-signal-label'), links: $('#card-links'),
   pieceList: $('#piece-list'), missingList: $('#missing-list')
 };
+const entry = $('#entry'); let pendingMode = null, enterImpl = null;
+if (entry) entry.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+  entry.classList.add('off'); setTimeout(() => { entry.hidden = true; }, 750);
+  if (enterImpl) enterImpl(b.dataset.mode); else pendingMode = b.dataset.mode;
+}));
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const coarse = matchMedia('(pointer: coarse)').matches;
 
@@ -71,7 +76,7 @@ function setMode(m) { mode = m; try { sessionStorage.setItem('mode', m); } catch
 // ---------- renderer / scene ----------
 let renderer;
 try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); }
-catch (e) { el.loading.textContent = 'This browser cannot draw the brain (no WebGL). The pieces are listed below.'; return; }
+catch (e) { el.loading.textContent = 'This browser cannot draw the brain (no WebGL). The pieces are listed below.'; document.body.classList.add('no-webgl'); if (pendingMode) setMode(pendingMode === 'plain' ? 'plain' : 'expert'); enterImpl = m => setMode(m === 'plain' ? 'plain' : 'expert'); return; }
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.setClearColor(0x000000, 0);
@@ -705,7 +710,6 @@ function frame(now) {
 }
 
 window.__brain = { pick: (x, y) => pick(x, y), items, pieces, camera, get meshes() { return meshes; }, hover, select };
-const entry = $('#entry');
 const ready = load().then(mats => { el.loading.classList.add('off'); applyCamera(); requestAnimationFrame(frame); return mats; })
   .catch(err => { console.error(err); el.loading.textContent = 'The brain did not load. The pieces are listed below.'; });
 function enter(m) {
@@ -713,6 +717,7 @@ function enter(m) {
   entry.classList.add('off'); setTimeout(() => { entry.hidden = true; }, 750);
   ready.then(mats => { if (mats) assemble(mats); });
 }
+enterImpl = enter;
 if (mode) { entry.hidden = true; renderLists(); ready.then(mats => { if (mats) assemble(mats); }); }
-else entry.querySelectorAll('button').forEach(b => b.addEventListener('click', () => enter(b.dataset.mode)));
+else if (pendingMode) enter(pendingMode);
 })();

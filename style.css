@@ -237,3 +237,7 @@ h2 { margin-bottom: 1.4rem; }
 
 /* a thumb on the brain turns it sideways and scrolls the page up and down */
 @media (pointer: coarse) { #brain { touch-action: pan-y; } }
+
+/* without WebGL the page still reads; the toys go away */
+.no-webgl .try, .no-webgl .minis, .no-webgl .views, .no-webgl .mute, .no-webgl .hint, .no-webgl .counter { display: none !important; }
+.no-webgl .loading.off { display: flex; }
