@@ -12,7 +12,8 @@
 <meta property="og:description" content="A hundred years ago, bad eyesight was just your fate. Now you put on glasses.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&family=Albert+Sans:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&family=Albert+Sans:ital,wght@0,400;0,500;1,400&family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=DM+Sans:opsz,wght@9..40,400;9..40,500&display=swap" rel="stylesheet">
+<script>(function(){var q=new URLSearchParams(location.search).get("theme"),t=q||localStorage.getItem("theme")||"sage";if(q)try{localStorage.setItem("theme",q)}catch(e){}document.documentElement.dataset.theme=t;})();</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23EDEFE8'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%231F231F' stroke-width='2.2'/%3E%3Cpath d='M7 16h18' stroke='%23C4573A' stroke-width='2.2'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -21,6 +22,7 @@
 <aside class="rail" aria-hidden="true">
   <span class="rail-name">Lucas Zhang</span>
   <span class="rail-line"></span>
+  <div class="themeswitch" id="themeswitch"><button data-theme="sage">Sage</button><button data-theme="cream">Cream</button><button data-theme="ink">Ink</button></div>
 </aside>
 
 <nav class="topbar">
@@ -31,11 +33,12 @@
     <a href="#missing">Missing</a>
     <a href="#contact">Write to me</a>
   </div>
+  <div class="themeswitch" id="themeswitch-m"><button data-theme="sage">Sage</button><button data-theme="cream">Cream</button><button data-theme="ink">Ink</button></div>
 </nav>
 
 <div class="entry" id="entry" role="dialog" aria-modal="true" aria-labelledby="entry-q">
   <div class="entry-inner">
-    <p class="entry-kicker">Lucas Zhang</p>
+    <p class="entry-kicker hey">hi biohackers! hear me out:</p>
     <h1 id="entry-q">Do you want to take control of your brain?</h1>
     <div class="entry-choices">
       <button data-mode="expert"><span>Yes</span><small>I know the basics of how brains work</small></button>
@@ -48,7 +51,7 @@
 <main class="layout">
   <div class="copy">
     <section id="story" class="story">
-      <p class="eyebrow">Lucas Zhang</p>
+      <p class="eyebrow hey">hi biohackers! hear me out:</p>
       <h1>A hundred years ago, bad eyesight was just your fate.<br><em>Now you put on glasses.</em></h1>
       <p>We treat the body as something you can look after. Tired, you rest. Hurt your leg, you don't let it get worse. The brain is the last organ we still treat as fate: can't focus, can't sleep, can't stop a thought, and the answer is to try harder.</p>
       <p>I want adjusting your own mental state to be as ordinary as putting on glasses. Measure it, see it change, do something about it, the same day.</p>

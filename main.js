@@ -15,8 +15,16 @@ const el = {
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const coarse = matchMedia('(pointer: coarse)').matches;
 
-const PAPER = 0xEDEFE8, INK = 0x1F231F, NEUTRAL = 0xCDD1C6, ACCENT = 0xC4573A;
+const THEMES = {
+  sage:  { paper: 0xEDEFE8, ink: 0x1F231F, neutral: 0xCDD1C6, socket: 0xEDEFE8, accent: 0xC4573A, edgeA: 0.16, lift: 0,    inkCss: '#1F231F', accentCss: '#C4573A', lightCss: '#9AA197', softCss: 'rgba(196,87,58,0.12)' },
+  cream: { paper: 0xF2EDE4, ink: 0x2E2C29, neutral: 0xD4CDC0, socket: 0xF2EDE4, accent: 0xB5362A, edgeA: 0.16, lift: 0,    inkCss: '#2E2C29', accentCss: '#B5362A', lightCss: '#A89F94', softCss: 'rgba(181,54,42,0.12)' },
+  ink:   { paper: 0x171A1C, ink: 0xECE9E1, neutral: 0x6A716E, socket: 0x2B3134, accent: 0xE2765A, edgeA: 0.3, lift: 0.1, inkCss: '#ECE9E1', accentCss: '#E2765A', lightCss: '#6E746F', softCss: 'rgba(226,118,90,0.16)' }
+};
+const THEME = THEMES[document.documentElement.dataset.theme] || THEMES.sage;
+const PAPER = THEME.socket, INK = THEME.ink, NEUTRAL = THEME.neutral, ACCENT = THEME.accent;
 const srgb = hex => new THREE.Color(hex).convertSRGBToLinear();
+const lifted = hex => { const c = new THREE.Color(hex); if (THEME.lift) c.offsetHSL(0, 0.02, THEME.lift); return c; };
+document.querySelectorAll('.themeswitch button').forEach(b => { b.classList.toggle('on', b.dataset.theme === (document.documentElement.dataset.theme || 'sage')); b.addEventListener('click', () => { try { localStorage.setItem('theme', b.dataset.theme); } catch (e) {} location.href = location.pathname + '?theme=' + b.dataset.theme; }); });
 const NAMES = { bankssts: 'Banks of the superior temporal sulcus', caudalanteriorcingulate: 'Caudal anterior cingulate', caudalmiddlefrontal: 'Caudal middle frontal', cuneus: 'Cuneus', entorhinal: 'Entorhinal', fusiform: 'Fusiform', inferiorparietal: 'Inferior parietal', inferiortemporal: 'Inferior temporal', isthmuscingulate: 'Isthmus cingulate', lateraloccipital: 'Lateral occipital', lateralorbitofrontal: 'Lateral orbitofrontal', lingual: 'Lingual', medialorbitofrontal: 'Medial orbitofrontal', middletemporal: 'Middle temporal', parahippocampal: 'Parahippocampal', paracentral: 'Paracentral', parsopercularis: 'Pars opercularis', parsorbitalis: 'Pars orbitalis', parstriangularis: 'Pars triangularis', pericalcarine: 'Pericalcarine', postcentral: 'Postcentral', posteriorcingulate: 'Posterior cingulate', precentral: 'Precentral', precuneus: 'Precuneus', rostralanteriorcingulate: 'Rostral anterior cingulate', rostralmiddlefrontal: 'Rostral middle frontal', superiorfrontal: 'Superior frontal', superiorparietal: 'Superior parietal', superiortemporal: 'Superior temporal', supramarginal: 'Supramarginal', frontalpole: 'Frontal pole', temporalpole: 'Temporal pole', transversetemporal: 'Transverse temporal', insula: 'Insula', medialwall: 'Medial wall' };
 const prettyRegion = name => { const [h, r] = name.split('-'); return (h === 'lh' ? 'Left ' : 'Right ') + (NAMES[r] || r).toLowerCase(); };
 
@@ -38,7 +46,7 @@ const byKey = new Map(items.map(it => [it.key, it]));
 
 function li(it) {
   const node = document.createElement('li'); node.dataset.key = it.key;
-  const chip = `<span class="chip ${it.kind === 'missing' ? 'hollow' : ''}" style="${it.kind === 'project' ? 'background:' + it.color : ''}"></span>`;
+  const chip = `<span class="chip ${it.kind === 'missing' ? 'hollow' : ''}" style="${it.kind === 'project' ? 'background:' + lifted(it.color).getStyle() : ''}"></span>`;
   const year = `<span class="year">${it.kind === 'project' ? it.year : '?'}</span>`;
   const links = it.links && it.links.length ? `<p class="l">${it.links.map(l => `<a href="${l.href}" target="_blank" rel="noopener">${l.label}</a>`).join('')}</p>` : '';
   const text = it.kind === 'project' ? T(it, 'blurb').split(/(?<=\.)\s/)[0] : T(it, 'question');
@@ -90,7 +98,7 @@ const matNeutral = aoMat({ color: srgb(NEUTRAL), transparent: true, opacity: 0 }
 const matNeutralHot = aoMat({ color: srgb(NEUTRAL), emissive: srgb(0xffffff), emissiveIntensity: 0.10 });
 const matMissing = aoMat({ color: srgb(PAPER), transparent: true, opacity: 0 });            // also the empty socket under a piece that has not landed
 const matMissingHot = aoMat({ color: srgb(PAPER), emissive: srgb(ACCENT), emissiveIntensity: 0.10 });
-items.forEach(it => { if (it.kind === 'project') { it.mat = aoMat({ color: srgb(it.color) }); it.hot = aoMat({ color: srgb(it.color), emissive: srgb(it.color), emissiveIntensity: 0.28 }); } });
+items.forEach(it => { if (it.kind === 'project') { const c = lifted(it.color).convertSRGBToLinear(); it.mat = aoMat({ color: c }); it.hot = aoMat({ color: c.clone(), emissive: c.clone(), emissiveIntensity: 0.28 }); } });
 
 // ---------- tweens ----------
 const tweens = new Set();
@@ -310,7 +318,7 @@ async function assemble(mats) {
   let done = false;
   const finalState = () => {
     done = true; tweens.clear();
-    for (const m of [matNeutral, matMissing]) { m.opacity = 1; m.transparent = false; m.needsUpdate = true; } mats.edgeMat.opacity = 0.16; mats.dashMat.opacity = 0.9;
+    for (const m of [matNeutral, matMissing]) { m.opacity = 1; m.transparent = false; m.needsUpdate = true; } mats.edgeMat.opacity = THEME.edgeA; mats.dashMat.opacity = 0.9;
     items.forEach(it => it.pieces.forEach(p => { p.pivot.visible = true; p.pivot.position.copy(p.center); p.pivot.quaternion.identity(); if (p.socket) p.socket.visible = false; }));
     missing.forEach(it => it.marker.classList.add('on'));
     Object.assign(cam, { theta: -2.2, phi: 1.15, r: fit, tx: 0, ty: 0, tz: 0 }); Object.assign(goal, { theta: -2.2, phi: 1.15, r: fit, tx: 0, ty: 0, tz: 0 });
@@ -321,7 +329,7 @@ async function assemble(mats) {
   if (reduceMotion) { finalState(); return; }
   // the board fades in while the camera begins a slow sweep from the right side to the left
   tween(3800, k => { cam.theta = 1.3 + (-2.2 - 1.3) * k; goal.theta = cam.theta; }, easeInOut);
-  await tween(900, k => { matNeutral.opacity = k; matMissing.opacity = k; mats.edgeMat.opacity = 0.16 * k; });
+  await tween(900, k => { matNeutral.opacity = k; matMissing.opacity = k; mats.edgeMat.opacity = THEME.edgeA * k; });
   for (const m of [matNeutral, matMissing]) { m.transparent = false; m.needsUpdate = true; }
   if (done) return;
   el.caption.classList.add('on');
@@ -367,7 +375,7 @@ function drawSignal(kind, cv, labelEl) {
   cv.style.display = 'block'; labelEl.style.display = 'block';
   const dpr = Math.min(devicePixelRatio || 1, 2), W = cv.clientWidth || 340, H = 72; cv.width = W * dpr; cv.height = H * dpr;
   const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
-  const ink = '#1F231F', acc = '#C4573A', mid = '#9AA197', rnd = mulberry32(11);
+  const ink = THEME.inkCss, acc = THEME.accentCss, mid = THEME.lightCss, rnd = mulberry32(11);
   const noise = () => rnd() + rnd() + rnd() - 1.5;
   const line = (pts, col, w = 1.2) => { c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.strokeStyle = col; c.lineWidth = w; c.lineJoin = 'round'; c.stroke(); };
   const text = (s, x, y, col = mid) => { c.fillStyle = col; c.font = '11px "Albert Sans", sans-serif'; c.fillText(s, x, y); };
@@ -380,7 +388,7 @@ function drawSignal(kind, cv, labelEl) {
     case 'states': { const cols = ['#6E9C7A', '#C9A24F', '#6E8FC2', '#C27C8A']; let s = 0, x = 0; while (x < W) { const len = 6 + rnd() * 26; c.fillStyle = cols[s]; c.fillRect(x, 18, len, 22); x += len; if (rnd() < 0.9) { let n = Math.floor(rnd() * 4); if (n === s) n = (n + 1) % 4; s = n; } } text('state 1', 2, 56, cols[0]); text('2', 48, 56, cols[1]); text('3', 64, 56, cols[2]); text('4', 80, 56, cols[3]); text('10 minutes of rest →', W - 120, 56); label = 'a four-state Markov chain over resting-state fMRI · synthetic'; break; }
     case 'dfc': { const bold = []; for (let x = 0; x < W; x++) { const t = x / W * 60; bold.push([x, 16 + Math.sin(t * 0.7) * 5 + Math.sin(t * 1.9 + 1) * 3 + noise() * 1.2]); } line(bold, ink); text('BOLD, one region, 2 s per sample', 6, 36); for (let r = 0; r < 5; r++) for (let i = 0; i < 70; i++) if (rnd() < 0.18) { c.fillStyle = mid; c.fillRect(rnd() * W, 42 + r * 5, 1, 4); } text('spikes, 5 electrodes, 100 ms bins', W - 190, H - 2); label = 'the same window slid over two scales · illustration'; break; }
     case 'bars': { const bars = [['untreated AD', 1, mid], ['+ isoorientin, mRNA', 2, ink], ['+ isoorientin, protein', 3, acc]]; const bw = (W - 40) / 3; bars.forEach(([n, v, col], i) => { const x = 20 + i * bw, hgt = v / 3 * 44; c.fillStyle = col; c.fillRect(x, 50 - hgt, bw - 24, hgt); text(n, x, 62); text(v + '×', x, 50 - hgt - 4, col); }); label = 'Nt5c1a relative to untreated AD mice · ratios as reported'; break; }
-    case 'zone': { const pts = []; let v = 0; const vals = []; for (let x = 0; x < W; x++) { v = v * 0.985 + noise() * 0.12; vals.push(v); } const sd = Math.sqrt(vals.reduce((a, b) => a + b * b, 0) / W) || 1; vals.forEach((v, x) => { if (Math.abs(v) > sd) { c.fillStyle = 'rgba(196,87,58,0.12)'; c.fillRect(x, 6, 1, H - 12); } pts.push([x, H * 0.5 - v / sd * 14]); }); line(pts, ink); text('reaction-time variability; shaded = out of the zone', 6, H - 6); label = 'the behaviour the brain states are matched against · illustration'; break; }
+    case 'zone': { const pts = []; let v = 0; const vals = []; for (let x = 0; x < W; x++) { v = v * 0.985 + noise() * 0.12; vals.push(v); } const sd = Math.sqrt(vals.reduce((a, b) => a + b * b, 0) / W) || 1; vals.forEach((v, x) => { if (Math.abs(v) > sd) { c.fillStyle = THEME.softCss; c.fillRect(x, 6, 1, H - 12); } pts.push([x, H * 0.5 - v / sd * 14]); }); line(pts, ink); text('reaction-time variability; shaded = out of the zone', 6, H - 6); label = 'the behaviour the brain states are matched against · illustration'; break; }
     case 'slow': { const pts = []; for (let x = 0; x < W; x++) { const t = x / W * 8; const slow = t > 4.5 ? Math.sin(2 * Math.PI * 1.2 * (t - 4.5)) * Math.min(1, (t - 4.5) / 1.5) * 9 : 0; pts.push([x, H * 0.5 + Math.sin(2 * Math.PI * 10 * t) * 2.2 * (t < 4.5 ? 1 : 0.4) + noise() * 1.8 + slow]); } line(pts, ink); mark(W * 0.93, 'tap'); text('slow waves creep in', W * 0.6, 14); label = 'one temple channel in the seconds before a lapse · illustration'; break; }
     default: cv.style.display = 'none'; labelEl.style.display = 'none'; return;
   }
@@ -454,10 +462,10 @@ function drawTrace() {
   const x = t => W - 24 - (G.t - t) * PX, y0 = H * 0.55;
   c.beginPath(); let first = true;
   for (const s of G.samples) { if (s.v === undefined) continue; const px = x(s.t); if (px < -2) continue; const py = y0 - s.v * H * 0.28; first ? c.moveTo(px, py) : c.lineTo(px, py); first = false; }
-  c.strokeStyle = '#1F231F'; c.lineWidth = 1.3; c.lineJoin = 'round'; c.stroke();
-  for (const s of G.samples) { if (!s.mark) continue; const px = x(s.t); if (px < 0) continue; c.fillStyle = s.mark === 'hit' ? '#1F231F' : '#C4573A'; c.fillRect(px - 0.5, 10, 1, H - 20); c.font = '11px "Albert Sans", sans-serif'; c.fillText(s.mark === 'hit' ? 'tap' : 'early', px + 4, 18); }
-  for (const L of G.lapses) if (L.state === 'miss') { const px = x(L.t); if (px > 0) { c.fillStyle = 'rgba(196,87,58,0.14)'; c.fillRect(px - PRE * PX, 6, PRE * PX, H - 12); c.fillStyle = '#C4573A'; c.font = '11px "Albert Sans", sans-serif'; c.fillText('lapse', px - 30, H - 8); } }
-  c.fillStyle = '#9AA197'; c.font = '11px "Albert Sans", sans-serif'; c.fillText('one temple channel · drawn', 12, 16);
+  c.strokeStyle = THEME.inkCss; c.lineWidth = 1.3; c.lineJoin = 'round'; c.stroke();
+  for (const s of G.samples) { if (!s.mark) continue; const px = x(s.t); if (px < 0) continue; c.fillStyle = s.mark === 'hit' ? THEME.inkCss : THEME.accentCss; c.fillRect(px - 0.5, 10, 1, H - 20); c.font = '11px "Albert Sans", sans-serif'; c.fillText(s.mark === 'hit' ? 'tap' : 'early', px + 4, 18); }
+  for (const L of G.lapses) if (L.state === 'miss') { const px = x(L.t); if (px > 0) { c.fillStyle = THEME.softCss; c.fillRect(px - PRE * PX, 6, PRE * PX, H - 12); c.fillStyle = THEME.accentCss; c.font = '11px "Albert Sans", sans-serif'; c.fillText('lapse', px - 30, H - 8); } }
+  c.fillStyle = THEME.lightCss; c.font = '11px "Albert Sans", sans-serif'; c.fillText('one temple channel · drawn', 12, 16);
 }
 function endGame(aborted) {
   if (!G.on) return; G.on = false;
@@ -559,9 +567,9 @@ function drawProbe(cv, site) {
     if (site.key === 'frontal' && (Math.abs(t - 1.1) < 0.12 || Math.abs(t - 3.3) < 0.12)) v += 1.6 * Math.cos((t - (t < 2 ? 1.1 : 3.3)) / 0.12 * Math.PI / 2);
     pts.push([x(t), y0 - v * H * 0.26]);
   }
-  c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.strokeStyle = '#1F231F'; c.lineWidth = 1.1; c.stroke();
-  c.fillStyle = 'rgba(196,87,58,0.12)'; c.fillRect(x(lapseT - site.lead), 2, x(site.lead), H - 4);
-  c.fillStyle = '#C4573A'; c.fillRect(x(lapseT), 2, 1, H - 4); c.font = '10px "Albert Sans", sans-serif'; c.fillText('lapse', x(lapseT) + 4, H - 4);
+  c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.strokeStyle = THEME.inkCss; c.lineWidth = 1.1; c.stroke();
+  c.fillStyle = THEME.softCss; c.fillRect(x(lapseT - site.lead), 2, x(site.lead), H - 4);
+  c.fillStyle = THEME.accentCss; c.fillRect(x(lapseT), 2, 1, H - 4); c.font = '10px "Albert Sans", sans-serif'; c.fillText('lapse', x(lapseT) + 4, H - 4);
 }
 function probeVerdict() {
   const score = e => e.site.vis * (0.5 + e.site.lead / 2.5) - e.site.noise * 0.3;
