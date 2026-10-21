@@ -238,6 +238,8 @@ h2 { margin-bottom: 1.4rem; }
 /* a thumb on the brain turns it sideways and scrolls the page up and down */
 @media (pointer: coarse) { #brain { touch-action: pan-y; } }
 
-/* without WebGL the page still reads; the toys go away */
-.no-webgl .try, .no-webgl .minis, .no-webgl .views, .no-webgl .mute, .no-webgl .hint, .no-webgl .counter { display: none !important; }
-.no-webgl .loading.off { display: flex; }
+/* without WebGL the page still reads: a still of the brain, no toys */
+.no-webgl .try, .no-webgl .minis, .no-webgl .views, .no-webgl .mute, .no-webgl .hint, .no-webgl .counter, .no-webgl #brain, .no-webgl .labels { display: none !important; }
+.still { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); width: min(86%, 760px); height: auto; }
+.still-note { position: absolute; left: 28px; right: 28px; bottom: 28px; font-size: 13px; color: var(--light); max-width: 34rem; margin: 0; }
+@media (max-width: 900px) { .still { width: 92%; } .still-note { left: 16px; right: 16px; bottom: 12px; font-size: 12px; } }

@@ -75,8 +75,10 @@ function setMode(m) { mode = m; try { sessionStorage.setItem('mode', m); } catch
 
 // ---------- renderer / scene ----------
 let renderer;
-try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); }
-catch (e) { el.loading.textContent = 'This browser cannot draw the brain (no WebGL). The pieces are listed below.'; document.body.classList.add('no-webgl'); if (pendingMode) setMode(pendingMode === 'plain' ? 'plain' : 'expert'); enterImpl = m => setMode(m === 'plain' ? 'plain' : 'expert'); return; }
+try { if (location.search.includes('nowebgl')) throw new Error('forced'); renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); if (!renderer.getContext()) throw new Error('no context'); }
+catch (e) {
+  document.body.classList.add('no-webgl'); el.loading.classList.add('off');
+  stage.insertAdjacentHTML('afterbegin', `<img class="still" src="assets/brain-still.webp" alt="The brain as a puzzle: coloured pieces are projects, pale ones are open questions"><p class="still-note">Your browser has WebGL switched off, so the brain is a picture here and the two games are hidden. In Chrome or Safari with hardware acceleration on, it turns, and you can play.</p>`); if (pendingMode) setMode(pendingMode === 'plain' ? 'plain' : 'expert'); enterImpl = m => setMode(m === 'plain' ? 'plain' : 'expert'); return; }
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.setClearColor(0x000000, 0);
