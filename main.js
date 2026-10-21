@@ -20,9 +20,17 @@ const srgb = hex => new THREE.Color(hex).convertSRGBToLinear();
 const NAMES = { bankssts: 'Banks of the superior temporal sulcus', caudalanteriorcingulate: 'Caudal anterior cingulate', caudalmiddlefrontal: 'Caudal middle frontal', cuneus: 'Cuneus', entorhinal: 'Entorhinal', fusiform: 'Fusiform', inferiorparietal: 'Inferior parietal', inferiortemporal: 'Inferior temporal', isthmuscingulate: 'Isthmus cingulate', lateraloccipital: 'Lateral occipital', lateralorbitofrontal: 'Lateral orbitofrontal', lingual: 'Lingual', medialorbitofrontal: 'Medial orbitofrontal', middletemporal: 'Middle temporal', parahippocampal: 'Parahippocampal', paracentral: 'Paracentral', parsopercularis: 'Pars opercularis', parsorbitalis: 'Pars orbitalis', parstriangularis: 'Pars triangularis', pericalcarine: 'Pericalcarine', postcentral: 'Postcentral', posteriorcingulate: 'Posterior cingulate', precentral: 'Precentral', precuneus: 'Precuneus', rostralanteriorcingulate: 'Rostral anterior cingulate', rostralmiddlefrontal: 'Rostral middle frontal', superiorfrontal: 'Superior frontal', superiorparietal: 'Superior parietal', superiortemporal: 'Superior temporal', supramarginal: 'Supramarginal', frontalpole: 'Frontal pole', temporalpole: 'Temporal pole', transversetemporal: 'Transverse temporal', insula: 'Insula', medialwall: 'Medial wall' };
 const prettyRegion = name => { const [h, r] = name.split('-'); return (h === 'lh' ? 'Left ' : 'Right ') + (NAMES[r] || r).toLowerCase(); };
 
-// ---------- contact links + lists (single source: pieces.js) ----------
+// ---------- mode: which words the visitor gets ----------
+let mode = (() => { try { return sessionStorage.getItem('mode'); } catch (e) { return null; } })();
+const T = (it, field) => (mode === 'plain' && it[field + 'Plain']) ? it[field + 'Plain'] : it[field];
+
+// ---------- contact links, who, longer version, lists (single source: pieces.js) ----------
 $('#mail-link').href = 'mailto:' + S.email; $('#mail-link').textContent = S.email;
-$('#github-link').href = S.github;
+$('#github-link').href = S.github; $('#who-github').href = S.github; $('#who-mail').href = 'mailto:' + S.email;
+$('#who-lines').innerHTML = S.who.map(l => `<span>${l}</span>`).join('<br>');
+if (S.cv) { const a = $('#cv-link'); a.href = S.cv; a.hidden = false; }
+if (S.photo) { const im = $('#who-photo'); im.src = S.photo; im.hidden = false; }
+$('#longer').innerHTML = S.longer.map(t => `<p>${t}</p>`).join('');
 const items = [];
 S.projects.forEach((p, i) => items.push({ ...p, kind: 'project', index: i, pieces: [] }));
 S.missing.forEach((m, i) => items.push({ ...m, kind: 'missing', index: S.projects.length + i, pieces: [] }));
@@ -33,15 +41,22 @@ function li(it) {
   const chip = `<span class="chip ${it.kind === 'missing' ? 'hollow' : ''}" style="${it.kind === 'project' ? 'background:' + it.color : ''}"></span>`;
   const year = `<span class="year">${it.kind === 'project' ? it.year : '?'}</span>`;
   const links = it.links && it.links.length ? `<p class="l">${it.links.map(l => `<a href="${l.href}" target="_blank" rel="noopener">${l.label}</a>`).join('')}</p>` : '';
-  const text = it.kind === 'project' ? it.blurb.split(/(?<=\.)\s/)[0] : it.question;
-  node.innerHTML = `${chip}${year}<div><div class="t">${it.title}</div><p class="d">${text}</p>${links}</div>`;
+  const text = it.kind === 'project' ? T(it, 'blurb').split(/(?<=\.)\s/)[0] : T(it, 'question');
+  node.innerHTML = `${chip}${year}<div><div class="t">${T(it, 'title')}</div><p class="d">${text}</p>${links}</div>`;
   node.addEventListener('mouseenter', () => { if (!coarse) hover(it, 'list'); });
   node.addEventListener('mouseleave', () => { if (!coarse) hover(null, 'list'); });
   node.addEventListener('click', e => { if (e.target.closest('a')) return; select(it); stage.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' }); });
   return node;
 }
-items.filter(i => i.kind === 'project').forEach(it => el.pieceList.appendChild(li(it)));
-items.filter(i => i.kind === 'missing').forEach(it => el.missingList.appendChild(li(it)));
+function renderLists() {
+  el.pieceList.innerHTML = ''; el.missingList.innerHTML = '';
+  items.filter(i => i.kind === 'project').forEach(it => el.pieceList.appendChild(li(it)));
+  items.filter(i => i.kind === 'missing').forEach(it => el.missingList.appendChild(li(it)));
+  $('#mode-switch').textContent = mode === 'plain' ? 'Switch to the technical words' : 'Switch to plain words';
+}
+renderLists();
+$('#mode-switch').addEventListener('click', e => { e.preventDefault(); setMode(mode === 'plain' ? 'expert' : 'plain'); });
+function setMode(m) { mode = m; try { sessionStorage.setItem('mode', m); } catch (e) {} renderLists(); if (selected) showCard(selected, true); else if (hovered) showCard(hovered, false); }
 
 // ---------- renderer / scene ----------
 let renderer;
@@ -193,7 +208,7 @@ function hover(it, source) {
   const show = hovered || selected; if (show) document.querySelector(`.piece-list li[data-key="${show.key}"]`)?.classList.add('on');
   if (!selected) showCard(hovered, false);
   canvas.classList.toggle('hot', !!hovered && source === 'canvas');
-  el.float.classList.toggle('on', !!hovered); if (hovered) el.float.textContent = hovered.title;
+  el.float.classList.toggle('on', !!hovered); if (hovered) el.float.textContent = T(hovered, 'title');
 }
 function select(it) {
   if (selected && selected !== it) paint(selected, false);
@@ -211,18 +226,20 @@ function showCard(it, full) {
   el.card.classList.toggle('on', !!it); el.card.classList.toggle('selected', !!it && full);
   if (!it) return;
   el.card.dataset.kind = it.kind;
-  el.kicker.textContent = it.kind === 'project' ? `${it.year} · ${it.where}` : `Missing · ${it.where}`;
-  el.title.textContent = it.title;
-  el.body.textContent = it.kind === 'project' ? it.blurb : it.question;
+  el.kicker.textContent = it.kind === 'project' ? `${it.year} · ${T(it, 'where')}` : `Missing · ${T(it, 'where')}`;
+  el.title.textContent = T(it, 'title');
+  el.body.textContent = it.kind === 'project' ? T(it, 'blurb') : T(it, 'question');
   el.status.textContent = it.kind === 'project' ? it.status : 'If this is your question too, write to me.';
   el.links.innerHTML = (it.kind === 'project' ? (it.links || []) : [{ label: 'Write to me', href: 'mailto:' + S.email + '?subject=' + encodeURIComponent(it.title) }])
     .map(l => `<a href="${l.href}" ${l.href.startsWith('mailto') ? '' : 'target="_blank" rel="noopener"'}>${l.label}</a>`).join('');
+  if (it.kind === 'missing' && mode === 'plain') el.status.textContent = 'If this is your problem too, or your research, write to me.';
   if (full && it.kind === 'project') { requestAnimationFrame(() => drawSignal(it.signal, el.signal, el.signalLabel)); }
   else { el.signal.style.display = 'none'; el.signalLabel.style.display = 'none'; }
 }
 el.cardClose.addEventListener('click', () => select(null));
 addEventListener('keydown', e => {
-  if (e.key === 'Escape') select(null);
+  if (G.on && (e.key === ' ' || e.code === 'Space')) { e.preventDefault(); tap(); return; }
+  if (e.key === 'Escape') { if (G.on) { endGame(true); return; } select(null); }
   if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const i = selected ? selected.index : -1; const n = items.length; select(items[(i + (e.key === 'ArrowRight' ? 1 : n - 1) + n) % n]); }
 });
 
@@ -235,6 +252,7 @@ function pick(x, y) {
   return hit ? hit.object.userData.piece : null;
 }
 canvas.addEventListener('pointerdown', e => {
+  if (G.on) { e.preventDefault(); tap(); return; }
   canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); lastInput = performance.now();
   if (pointers.size === 1) { dragging = true; moved = 0; canvas.classList.add('dragging'); }
   if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); r0 = goal.r; }
@@ -296,7 +314,7 @@ async function assemble(mats) {
     missing.forEach(it => it.marker.classList.add('on'));
     Object.assign(cam, { theta: -2.2, phi: 1.15, r: fit, tx: 0, ty: 0, tz: 0 }); Object.assign(goal, { theta: -2.2, phi: 1.15, r: fit, tx: 0, ty: 0, tz: 0 });
     el.caption.classList.remove('on'); el.counter.textContent = `${projects.length} pieces placed · ${missing.length} missing`;
-    assembling = false; lastInput = performance.now() - 2500;
+    assembling = false; lastInput = performance.now() - 2500; $('#run-mini').classList.add('on');
   };
   finishAssembly = finalState;
   if (reduceMotion) { finalState(); return; }
@@ -368,6 +386,105 @@ function drawSignal(kind, cv, labelEl) {
   labelEl.textContent = label;
 }
 
+
+// ---------- the session game: you are the lever ----------
+const G = { on: false, t: 0, dur: 40, lapses: [], taps: 0, hits: 0, misses: 0, fas: 0, leads: [], drift: 0, flash: 0, samples: [], lastSample: 0, streamT: 0 };
+const PRE = 2.2, POST = 0.3, PX = 72, SR = 120;
+const gm = { root: $('#game'), stream: $('#stream'), score: $('#score'), trace: $('#trace'), prompt: $('#game-prompt'), tapbtn: $('#tapbtn'), result: $('#result') };
+const SHAPES = { city: '<svg viewBox="0 0 20 20"><path d="M2 18V9h4v9M7 18V4h5v14M13 18v-7h5v7"/></svg>', mountain: '<svg viewBox="0 0 20 20"><path d="M2 17l6-10 4 6 2-3 4 7z"/></svg>' };
+let gameMats = null, savedCam = null;
+function dmnItems() { return items.filter(i => ['a3', 'hcp'].includes(i.key)); }
+function visItems() { return items.filter(i => i.key === 'ssvep'); }
+function startGame() {
+  if (G.on) return; if (assembling) finishAssembly();
+  if (selected) { paint(selected, false); selected = null; el.card.classList.remove('on', 'selected'); }
+  hover(null, 'game');
+  Object.assign(G, { on: true, t: 0, taps: 0, hits: 0, misses: 0, fas: 0, leads: [], drift: 0, flash: 0, samples: [], lastSample: 0, streamT: 0, lapses: [] });
+  let t = 5 + Math.random() * 2; while (t < G.dur - 2.5) { G.lapses.push({ t, state: 'pending' }); t += 3.4 + Math.random() * 2.4; }
+  gameMats = { dmn: [], vis: [] };
+  dmnItems().forEach(it => { const m = it.mat.clone(); m.emissive = srgb(ACCENT); m.emissiveIntensity = 0; it.pieces.forEach(p => p.mesh.material = m); gameMats.dmn.push(m); });
+  visItems().forEach(it => { const m = it.mat.clone(); m.userData.base = m.color.clone(); it.pieces.forEach(p => p.mesh.material = m); gameMats.vis.push(m); });
+  stage.classList.add('gaming'); gm.root.hidden = false; gm.result.hidden = true; gm.trace.style.display = ''; gm.prompt.style.display = '';
+  gm.stream.innerHTML = Array.from({ length: 7 }, (_, i) => `<div class="s">${SHAPES[i % 3 === 1 ? 'mountain' : 'city']}</div>`).join('');
+  gm.stream.children[3].classList.add('now');
+  savedCam = { ...goal }; flyTo({ theta: -0.9, phi: 1.25, r: fit * 0.92, tx: 0, ty: 0, tz: 0 }, 900);
+  stage.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  updateScore();
+}
+function tap() {
+  if (!G.on) return; G.taps++;
+  const L = G.lapses.find(l => l.state === 'pending' && G.t >= l.t - PRE && G.t <= l.t + POST);
+  if (L) { L.state = 'hit'; L.at = G.t; G.hits++; G.leads.push(L.t - G.t); G.flash = -1; }
+  else { G.fas++; G.lastFa = G.t; }
+  G.samples.push({ t: G.t, mark: L ? 'hit' : 'fa' });
+  updateScore();
+}
+function updateScore() { gm.score.innerHTML = `caught <b>${G.hits}</b> · missed <b>${G.misses}</b> · false <b>${G.fas}</b> · <b>${Math.max(0, Math.ceil(G.dur - G.t))}</b> s`; }
+function gameFrame(dt) {
+  if (!G.on) return;
+  G.t += dt;
+  // lapses that nobody caught
+  for (const L of G.lapses) if (L.state === 'pending' && G.t > L.t + POST) { L.state = 'miss'; G.misses++; G.flash = 1; const s = gm.stream.querySelector('.now'); if (s) s.classList.add('missed'); updateScore(); }
+  // the hidden drift: rises in the seconds before a pending lapse
+  let target = 0; for (const L of G.lapses) if (L.state === 'pending') { const k = 1 - (L.t - G.t) / PRE; if (k > 0 && k < 1.2) target = Math.max(target, Math.min(1, k)); }
+  G.drift += (target - G.drift) * (1 - Math.pow(target > G.drift ? 0.1 : 0.002, dt));
+  gameMats.dmn.forEach(m => { m.emissiveIntensity = 0.5 * G.drift; });
+  G.flash *= Math.pow(0.08, dt);
+  gameMats.vis.forEach(m => { m.color.copy(m.userData.base).lerp(srgb(INK), Math.max(0, G.flash) * 0.75); });
+  // the picture stream ticks every 0.8 s
+  G.streamT += dt; if (G.streamT > 0.8) { G.streamT = 0; const kids = gm.stream.children; const i = [...kids].findIndex(k => k.classList.contains('now')); kids[i].classList.remove('now', 'missed'); kids[i].innerHTML = SHAPES[Math.random() < 0.12 ? 'mountain' : 'city']; kids[(i + 1) % kids.length].classList.add('now'); }
+  // the trace, drawn fresh each frame
+  while (G.lastSample < G.t) { G.lastSample += 1 / SR; G.samples.push({ t: G.lastSample, v: traceValue(G.lastSample) }); }
+  const cut = G.t - gm.trace.clientWidth / PX - 1; while (G.samples.length && G.samples[0].t < cut) G.samples.shift();
+  drawTrace();
+  if (G.t >= G.dur) endGame(false);
+}
+let noiseState = 0;
+function traceValue(t) {
+  noiseState = noiseState * 0.86 + (Math.random() - 0.5) * 0.9;
+  let v = noiseState * 0.35 + Math.sin(2 * Math.PI * 10 * t) * 0.18 * (1 - 0.6 * G.drift);
+  for (const L of G.lapses) { const k = 1 - (L.t - t) / PRE; if (L.state !== 'hit' && k > 0 && t <= L.t + POST) v += Math.sin(2 * Math.PI * 1.3 * (t - L.t)) * Math.min(1, k) * 0.9; else if (L.state === 'hit' && t > L.at && t < L.at + 0.6) v += Math.sin(2 * Math.PI * 1.3 * (t - L.t)) * 0.9 * (1 - (t - L.at) / 0.6); }
+  return v;
+}
+function drawTrace() {
+  const cv = gm.trace, dpr = Math.min(devicePixelRatio || 1, 2), W = cv.clientWidth, H = cv.clientHeight;
+  if (cv.width !== W * dpr) { cv.width = W * dpr; cv.height = H * dpr; }
+  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
+  const x = t => W - 24 - (G.t - t) * PX, y0 = H * 0.55;
+  c.beginPath(); let first = true;
+  for (const s of G.samples) { if (s.v === undefined) continue; const px = x(s.t); if (px < -2) continue; const py = y0 - s.v * H * 0.28; first ? c.moveTo(px, py) : c.lineTo(px, py); first = false; }
+  c.strokeStyle = '#1F231F'; c.lineWidth = 1.3; c.lineJoin = 'round'; c.stroke();
+  for (const s of G.samples) { if (!s.mark) continue; const px = x(s.t); if (px < 0) continue; c.fillStyle = s.mark === 'hit' ? '#1F231F' : '#C4573A'; c.fillRect(px - 0.5, 10, 1, H - 20); c.font = '11px "Albert Sans", sans-serif'; c.fillText(s.mark === 'hit' ? 'tap' : 'early', px + 4, 18); }
+  for (const L of G.lapses) if (L.state === 'miss') { const px = x(L.t); if (px > 0) { c.fillStyle = 'rgba(196,87,58,0.14)'; c.fillRect(px - PRE * PX, 6, PRE * PX, H - 12); c.fillStyle = '#C4573A'; c.font = '11px "Albert Sans", sans-serif'; c.fillText('lapse', px - 30, H - 8); } }
+  c.fillStyle = '#9AA197'; c.font = '11px "Albert Sans", sans-serif'; c.fillText('one temple channel · drawn', 12, 16);
+}
+function endGame(aborted) {
+  if (!G.on) return; G.on = false;
+  gameMats.dmn.forEach(m => m.dispose()); gameMats.vis.forEach(m => m.dispose());
+  dmnItems().concat(visItems()).forEach(it => it.pieces.forEach(p => p.mesh.material = it.mat));
+  gm.root.hidden = true; stage.classList.remove('gaming');
+  if (savedCam) flyTo(savedCam, 900);
+  if (aborted) return;
+  // the comparison: the same number of taps at random moments, averaged over many draws
+  const n = G.lapses.length, taps = Math.max(1, G.taps); let sum = 0; const DRAWS = 300;
+  for (let d = 0; d < DRAWS; d++) { const r = Array.from({ length: taps }, () => Math.random() * G.dur); sum += G.lapses.filter(L => r.some(t => t >= L.t - PRE && t <= L.t + POST)).length; }
+  const randomHits = sum / DRAWS;
+  const lead = G.leads.length ? (G.leads.reduce((a, b) => a + b, 0) / G.leads.length).toFixed(1) : null;
+  const plain = mode === 'plain';
+  gm.result.innerHTML = `
+    <p class="r-kicker">${aborted ? 'stopped' : 'session over'}</p>
+    <p class="r-big">You caught <em>${G.hits}</em> of ${n}.<br>Random taps catch about <em>${randomHits.toFixed(1)}</em>.</p>
+    <p>${G.fas} false alarm${G.fas === 1 ? '' : 's'}${lead ? `, taps landed ${lead} s before the lapse on average` : ''}. ${plain ? 'Same number of taps, timed by the brain instead of by chance: that gap is the whole product.' : 'Timed by a state readout versus a yoked random schedule: that contrast is the entire claim, and it has not been measured properly on a real head.'}</p>
+    <p class="r-fine">${plain ? 'A toy: the lapses and the trace were drawn, time was compressed.' : `Window −${PRE} s to +${POST} s around each lapse; ${n} lapses in ${G.dur} s, roughly five times the real rate. Drawn, not recorded.`}</p>
+    <div class="r-actions"><button class="primary" id="r-again">Again</button><button id="r-missing">See the missing piece</button><button id="r-close">Close</button></div>`;
+  stage.classList.add('gaming'); gm.root.hidden = false; gm.result.hidden = false; gm.stream.innerHTML = ''; gm.score.innerHTML = ''; gm.trace.style.display = 'none'; gm.prompt.style.display = 'none';
+  const close = () => { gm.result.hidden = true; gm.root.hidden = true; stage.classList.remove('gaming'); };
+  $('#r-again').onclick = () => { close(); startGame(); };
+  $('#r-close').onclick = close;
+  $('#r-missing').onclick = () => { close(); const it = byKey.get('lever'); select(it); document.getElementById('missing').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' }); };
+}
+$('#run-btn').addEventListener('click', startGame); $('#run-mini').addEventListener('click', startGame); gm.tapbtn.addEventListener('pointerdown', e => { e.preventDefault(); tap(); });
+
 // ---------- main loop ----------
 function resize() { const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); if (meshes.length) computeFit(); }
 new ResizeObserver(resize).observe(stage); resize();
@@ -375,7 +492,7 @@ let last = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
-  runTweens(now);
+  runTweens(now); gameFrame(dt);
   if (!flying) { const k = 1 - Math.pow(0.001, dt); for (const key of ['theta', 'phi', 'r', 'tx', 'ty', 'tz']) cam[key] += (goal[key] - cam[key]) * k; }
   const idle = (now - lastInput) / 1000 > 3 && !selected && !assembling && !reduceMotion;
   const swayGoal = idle ? Math.sin(now * 0.00035) * 0.16 : 0;
@@ -385,8 +502,14 @@ function frame(now) {
 }
 
 window.__brain = { pick: (x, y) => pick(x, y), items, pieces, camera, get meshes() { return meshes; }, hover, select };
-load().then(mats => {
-  el.loading.classList.add('off'); applyCamera(); requestAnimationFrame(frame);
-  assemble(mats);
-}).catch(err => { console.error(err); el.loading.textContent = 'The brain did not load. The pieces are listed below.'; });
+const entry = $('#entry');
+const ready = load().then(mats => { el.loading.classList.add('off'); applyCamera(); requestAnimationFrame(frame); return mats; })
+  .catch(err => { console.error(err); el.loading.textContent = 'The brain did not load. The pieces are listed below.'; });
+function enter(m) {
+  setMode(m === 'plain' ? 'plain' : 'expert');
+  entry.classList.add('off'); setTimeout(() => { entry.hidden = true; }, 750);
+  ready.then(mats => { if (mats) assemble(mats); });
+}
+if (mode) { entry.hidden = true; renderLists(); ready.then(mats => { if (mats) assemble(mats); }); }
+else entry.querySelectorAll('button').forEach(b => b.addEventListener('click', () => enter(b.dataset.mode)));
 })();

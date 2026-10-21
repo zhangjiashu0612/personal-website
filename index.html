@@ -27,10 +27,23 @@
   <a class="topbar-name" href="#story">Lucas Zhang</a>
   <div class="topbar-links">
     <a href="#pieces">Pieces</a>
+    <a href="#try">Try it</a>
     <a href="#missing">Missing</a>
     <a href="#contact">Write to me</a>
   </div>
 </nav>
+
+<div class="entry" id="entry" role="dialog" aria-modal="true" aria-labelledby="entry-q">
+  <div class="entry-inner">
+    <p class="entry-kicker">Lucas Zhang</p>
+    <h1 id="entry-q">Do you want to take control of your brain?</h1>
+    <div class="entry-choices">
+      <button data-mode="expert"><span>Yes</span><small>I know the basics of how brains work</small></button>
+      <button data-mode="plain"><span>Yes</span><small>I know nothing about brains, and that's fine</small></button>
+      <button data-mode="none" class="quiet">Just looking</button>
+    </div>
+  </div>
+</div>
 
 <main class="layout">
   <div class="copy">
@@ -40,13 +53,28 @@
       <p>We treat the body as something you can look after. Tired, you rest. Hurt your leg, you don't let it get worse. The brain is the last organ we still treat as fate: can't focus, can't sleep, can't stop a thought, and the answer is to try harder.</p>
       <p>I want adjusting your own mental state to be as ordinary as putting on glasses. Measure it, see it change, do something about it, the same day.</p>
       <p>Two pieces are missing: a readout of your brain you can trust outside a lab, and a lever that reliably moves it. Every coloured piece on the brain is something I've worked on. The outlined ones are questions I haven't answered. If you work on one of them, write to me.</p>
-      <p class="sig">Neural engineering, University of Illinois Urbana-Champaign. Building <a href="https://www.focuskit.org">FocusKit</a>.</p>
+      <details class="longer"><summary>The longer version</summary><div id="longer"></div></details>
+      <div class="who" id="who">
+        <img id="who-photo" alt="" hidden>
+        <div>
+          <p class="who-name">Lucas Zhang</p>
+          <p class="who-lines" id="who-lines"></p>
+          <p class="who-links"><a id="cv-link" href="#" hidden>CV</a><a id="who-github" href="#">GitHub</a><a href="https://www.focuskit.org">FocusKit</a><a id="who-mail" href="#">email</a></p>
+        </div>
+      </div>
       <p class="scrollhint" aria-hidden="true">Turn the brain. Hover a piece.</p>
     </section>
 
     <section id="pieces" class="pieces">
       <h2>Pieces so far</h2>
       <ol class="piece-list" id="piece-list"></ol>
+    </section>
+
+    <section id="try" class="try">
+      <h2>Try it</h2>
+      <p>The brain on the right is about to do a boring task. Somewhere in it a lapse is building. You are the lever: catch each lapse before it happens, with one tap. Forty seconds.</p>
+      <p><button class="btn" id="run-btn">Run a session</button></p>
+      <p class="fine">A toy model with compressed time, drawn not recorded. The point is the count at the end.</p>
     </section>
 
     <section id="missing" class="missing">
@@ -62,6 +90,7 @@
         <a id="github-link" href="#" rel="me">GitHub</a>
         <a href="https://www.focuskit.org">FocusKit</a>
       </p>
+      <p class="fine"><a href="#" id="mode-switch">Switch to plain words</a></p>
       <p class="fine">The brain is the fsaverage surface with Desikan-Killiany regions, smoothed for display. Where a piece sits is a choice, not a claim. Signals marked illustration are drawn, not recorded.</p>
     </section>
   </div>
@@ -82,6 +111,15 @@
       <button data-view="right">Right</button>
       <button data-view="below">Below</button>
       <button data-view="inside">Inside</button>
+    </div>
+    <button class="runmini" id="run-mini">Run a session</button>
+    <div class="game" id="game" hidden>
+      <div class="stream" id="stream" aria-hidden="true"></div>
+      <div class="score" id="score"></div>
+      <div class="game-prompt" id="game-prompt">press <kbd>space</kbd> or tap the brain when you feel a lapse coming</div>
+      <canvas class="trace" id="trace" height="96"></canvas>
+      <button class="tapbtn" id="tapbtn">tap</button>
+      <div class="result" id="result" hidden></div>
     </div>
     <article class="card" id="card" aria-live="polite">
       <button class="card-close" id="card-close" aria-label="Close">×</button>
