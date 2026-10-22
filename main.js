@@ -57,8 +57,8 @@ function li(it) {
   node.innerHTML = `<div class="head">${chip}${year}<div><div class="t">${it.title}</div><p class="d">${text}</p>${it.then ? `<p class="then">${it.then}</p>` : ''}</div></div>${dossier}`;
   const head = node.querySelector('.head');
   head.addEventListener('mouseenter', () => { if (!coarse) hover(it, 'list'); });
-  head.addEventListener('mouseleave', () => { if (!coarse) hover(null, 'list'); });
-  head.addEventListener('click', () => { const open = !node.classList.contains('open'); document.querySelectorAll('.piece-list li.open').forEach(n => { if (n !== node) n.classList.remove('open'); }); node.classList.toggle('open', open); });
+  head.addEventListener('mouseleave', () => { if (!coarse) hover(scrollItem, scrollItem ? 'scroll' : 'list'); });
+  head.addEventListener('click', () => { const open = !node.classList.contains('open'); document.querySelectorAll('.piece-list li.open').forEach(n => { if (n !== node) n.classList.remove('open'); }); node.classList.toggle('open', open); if (open) select(it); else if (selected === it) select(null); });
   node.querySelector('.showme').addEventListener('click', e => { e.preventDefault(); select(it); if (innerWidth <= 900) stage.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' }); });
   return node;
 }
@@ -223,7 +223,7 @@ function revealRow(it) {
 function select(it, fromBrain) {
   if (selected && selected !== it) paint(selected, false);
   selected = it;
-  if (!it) { hideFrame(); showCard(hovered, false); if (hovered) paint(hovered, true); camOwner = 'section'; applySection(true); return; }
+  if (!it) { hideFrame(); showCard(hovered, false); if (hovered) paint(hovered, true); camOwner = 'section'; applySection(true); if (scrollItem) { hover(scrollItem, 'scroll'); camOwner = 'scroll'; flyTo(viewOf(scrollItem, 0.94, 0.3), 900); } return; }
   if (it.key === 'focuskit') showFrame(true); else hideFrame();
   paint(it, true); showCard(it, true);
   document.querySelectorAll('.piece-list li.on').forEach(n => n.classList.remove('on'));
@@ -564,17 +564,31 @@ function applySection(force) {
   if (prev === 'build' && camKind !== 'build') clearBuild();
   if (prev === 'temple' && camKind !== 'temple') { paperOn(false); electrodeDot.classList.remove('on'); }
   if (camKind !== 'hold' && camKind !== 'state') showHemis(true, true);
-  if (camOwner === 'user' && !force) camOwner = 'section';
+  if ((camOwner === 'user' || camOwner === 'scroll') && !force) camOwner = 'section';
   if (camOwner === 'select' && selected && !force) return;
   swayAmp = 0.16;
-  if (camKind === 'home') { camOwner = 'section'; flyTo(home(), 1100); }
+  if (camKind === 'home') { camOwner = 'section'; flyTo(home(), 1100); if (id === 'work') { scrollItem = null; syncRows(); } }
   else if (camKind === 'temple') { camOwner = 'section'; const fk = byKey.get('focuskit'); flyTo(viewOf(fk, 0.8, 0.4), 1200); paperOn(true); electrodeDot.classList.add('on'); }
   else if (camKind === 'hold') { if (chosen) chooseState(chosen, false); else { camOwner = 'section'; flyTo(home({ r: fit * 0.95 }), 1000); } }
   else if (camKind === 'build') { if (buildView === 'story') { if (!story.played) startStory(); else { camOwner = 'section'; flyTo(home({ r: fit * 1.06 }), 1000); endStory(false); } } else { camOwner = 'section'; flyTo({ theta: -1.9, phi: 1.2, r: fit * 1.02, tx: 0, ty: 0, tz: 0 }, 1000); showMechanics(); } }
-  else if (camKind === 'missing') { camOwner = 'section'; flyTo({ theta: -2.75, phi: 0.95, r: fit, tx: 0, ty: 0, tz: 0 }, 1100); }
+  else if (camKind === 'missing') { camOwner = 'section'; flyTo({ theta: -2.75, phi: 0.95, r: fit, tx: 0, ty: 0, tz: 0 }, 1100); scrollItem = null; syncRows(); }
   else if (camKind === 'orbit') { camOwner = 'section'; swayAmp = 0.32; flyTo(home({ r: fit * 1.08 }), 1200); }
 }
-let scrollTick = false; addEventListener('scroll', () => { if (!em.done) em.target = emergeTarget(); if (scrollTick) return; scrollTick = true; requestAnimationFrame(() => { scrollTick = false; applySection(false); }); }, { passive: true });
+let scrollItem = null;
+function syncRows() {
+  if (!em.done || !meshes.length) return;
+  const sec = activeId === 'work' ? $('#work') : activeId === 'missing' ? $('#missing') : null;
+  if (!sec) { if (scrollItem) { const was = scrollItem; scrollItem = null; if (hovered === was && hoverSource === 'scroll') hover(null, 'scroll'); } return; }
+  const line = innerHeight * 0.42; let best = null, bd = 1e9;
+  sec.querySelectorAll('.piece-list li').forEach(li => { const r = li.getBoundingClientRect(); const c = r.top + Math.min(r.height, 120) / 2; const d = Math.abs(c - line); if (d < bd) { bd = d; best = li; } });
+  const it = best ? byKey.get(best.dataset.key) : null;
+  if (it === scrollItem) return;
+  scrollItem = it;
+  if (selected) return;
+  hover(it, 'scroll');
+  if (it && camOwner !== 'user' && camOwner !== 'select' && !story.on) { camOwner = 'scroll'; flyTo(viewOf(it, 0.94, 0.3), 1000); }
+}
+let scrollTick = false; addEventListener('scroll', () => { if (!em.done) em.target = emergeTarget(); if (scrollTick) return; scrollTick = true; requestAnimationFrame(() => { scrollTick = false; applySection(false); syncRows(); }); }, { passive: true });
 
 // ---------- labels that follow the brain ----------
 const v3 = new THREE.Vector3(), camDir = new THREE.Vector3();

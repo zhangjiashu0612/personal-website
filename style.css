@@ -24,7 +24,8 @@ a:hover { text-decoration-color: var(--accent); }
 h1, h2, h3 { font-family: var(--display); font-weight: 500; letter-spacing: 0; margin: 0; }
 p { margin: 0 0 1em; max-width: min(var(--measure), 100%); }
 .label, .eyebrow, h2, .counter, .card-kicker, .rail-name, .year { font-family: var(--body); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mid); }
-.hey, .entry .hey { font-family: var(--display); font-style: italic; font-size: 20px; letter-spacing: 0; text-transform: none; color: var(--mid); margin-bottom: 1.4rem; }
+.hey { font-family: var(--display); font-style: italic; font-size: 20px; letter-spacing: 0; text-transform: none; color: var(--mid); margin-bottom: 1.4rem; }
+.hello .hey { font-size: clamp(24px, 2.2vw, 32px); color: var(--ink); margin-bottom: 1.2rem; }
 .textbtn { font: 500 11px var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--mid); background: transparent; border: 0; border-bottom: 1px solid transparent; padding: 4px 1px; cursor: pointer; }
 .textbtn:hover { color: var(--ink); }
 .textbtn.on { color: var(--ink); border-bottom-color: var(--ink); }
@@ -149,16 +150,17 @@ h2 { margin-bottom: 1.4rem; }
 
 /* sections: scroll-linked choreography on the right */
 section { scroll-margin-top: 10vh; }
-.hello { min-height: 76vh; display: flex; flex-direction: column; justify-content: center; }
-.hello h1 { font-size: clamp(32px, 3.6vw, 52px); line-height: 1.06; margin: 0 0 1.4rem; max-width: 18ch; }
-.hello .lead { max-width: 34rem; }
+.hello { min-height: 76vh; display: flex; flex-direction: column; justify-content: center; width: 136%; position: relative; z-index: 2; }
+.hello h1 { font-size: clamp(40px, 4.4vw, 66px); line-height: 1.02; margin: 0 0 1.5rem; max-width: 15ch; }
+.hello .lead { max-width: 34rem; font-size: 20px; }
 .hello .toc:empty { display: none; }
 .scrollcue { display: inline-block; width: 22px; height: 36px; border: 1px solid var(--line); border-radius: 11px; margin-top: 2.6rem; position: relative; }
 .scrollcue span { position: absolute; left: 50%; top: 7px; width: 3px; height: 7px; margin-left: -1.5px; border-radius: 2px; background: var(--mid); animation: cue 1.8s ease-in-out infinite; }
 @keyframes cue { 0%, 100% { transform: translateY(0); opacity: 1; } 60% { transform: translateY(12px); opacity: 0; } 61% { transform: translateY(0); opacity: 0; } }
-.portrait { position: absolute; left: 50%; top: 47%; transform: translate(-50%, -50%); height: min(72%, 600px); aspect-ratio: 3 / 4; border: 1px solid var(--line); border-radius: 3px; background: var(--sheet); overflow: hidden; box-shadow: 0 1px 0 rgba(46,44,41,.05), 0 24px 50px -30px rgba(46,44,41,.5); }
+.portrait { position: absolute; left: 50%; top: 47%; transform: translate(-50%, -50%); height: min(74%, 620px); aspect-ratio: 3 / 4; border-radius: 999px 999px 6px 6px; background: var(--sheet); overflow: hidden; box-shadow: 0 0 0 1px var(--line), 0 0 0 9px var(--paper), 0 0 0 10px var(--line), 0 30px 60px -36px rgba(46,44,41,.55); }
+.portrait::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(ellipse 70% 62% at 50% 42%, transparent 55%, rgba(242,237,228,.55) 100%); pointer-events: none; }
 .portrait img, .portrait svg { width: 100%; height: 100%; object-fit: cover; display: block; }
-.portrait img, .who-photo img { filter: saturate(.9) sepia(.08) contrast(1.02); }
+.portrait img, .who-photo img { filter: saturate(.82) sepia(.12) contrast(1.03); }
 .portrait { pointer-events: none; will-change: opacity, transform; }
 .portrait[hidden] { display: none; }
 .hello .lead { font-size: 19px; color: var(--text-2); }
@@ -241,9 +243,11 @@ section { scroll-margin-top: 10vh; }
   .layout { grid-template-columns: 1fr; margin-left: 0; }
   .stage { order: -1; position: sticky; top: 49px; height: 46vh; min-height: 300px; z-index: 3; background: var(--paper); border-bottom: 1px solid var(--line); }
   .copy { padding: 6vh 18px 10vh; position: relative; z-index: 1; }
-  .hello { min-height: 0; display: block; }
-  .hello h1 { font-size: clamp(28px, 8vw, 40px); }
-  .portrait { height: 86%; }
+  .hello { min-height: 0; display: block; width: auto; }
+  .hello h1 { font-size: clamp(30px, 8.6vw, 42px); }
+  .hello .hey { font-size: 22px; }
+  .hello .lead { font-size: 17px; }
+  .portrait { height: 84%; box-shadow: 0 0 0 1px var(--line), 0 0 0 6px var(--paper), 0 0 0 7px var(--line); }
   .scrollcue { display: none; }
   .counter { left: 14px; top: 12px; }
   .hint { display: none; }
