@@ -531,7 +531,8 @@ function applyEmerge(p) {
   canvas.style.transform = `translate(${(x - cx).toFixed(1)}px, ${(y - cy).toFixed(1)}px) scale(${k.toFixed(4)})`;
   const line = crownY + b * (sr.height + 60 - crownY);                           // the soft edge the brain rises through, then it leaves
   const m = `linear-gradient(to bottom, #000 ${(line - 34).toFixed(1)}px, transparent ${line.toFixed(1)}px)`; wrap.style.webkitMaskImage = m; wrap.style.maskImage = m;
-  portrait.style.opacity = (1 - b).toFixed(3); portrait.style.transform = `translate(-50%, calc(-50% + ${(b * 26).toFixed(1)}px)) scale(${(1 - 0.03 * b).toFixed(4)})`;
+  const f = smooth(0.32, 0.85, p);                                                 // the portrait lets go a little before the brain reaches the centre
+  portrait.style.opacity = (1 - f).toFixed(3); portrait.style.transform = `translate(-50%, calc(-50% + ${(f * 26).toFixed(1)}px)) scale(${(1 - 0.03 * f).toFixed(4)})`;
   cam.phi = lerp(0.72, HOME.phi, smooth(0, 1, p)); cam.theta = lerp(HOME.theta - 0.4, HOME.theta, smooth(0, 1, p)); cam.r = fit; cam.tx = cam.ty = cam.tz = 0; Object.assign(goal, cam);
 }
 function emergeFrame(dt) {
