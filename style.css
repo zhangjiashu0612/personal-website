@@ -156,9 +156,9 @@ section { scroll-margin-top: 10vh; }
 .scrollcue { display: inline-block; width: 22px; height: 36px; border: 1px solid var(--line); border-radius: 11px; margin-top: 2.6rem; position: relative; }
 .scrollcue span { position: absolute; left: 50%; top: 7px; width: 3px; height: 7px; margin-left: -1.5px; border-radius: 2px; background: var(--mid); animation: cue 1.8s ease-in-out infinite; }
 @keyframes cue { 0%, 100% { transform: translateY(0); opacity: 1; } 60% { transform: translateY(12px); opacity: 0; } 61% { transform: translateY(0); opacity: 0; } }
-.portrait { position: absolute; left: 50%; top: 47%; transform: translate(-50%, -50%); height: min(72%, 600px); aspect-ratio: 3 / 4; border: 1px solid var(--line); border-radius: 3px; background: var(--sheet); overflow: hidden; box-shadow: 0 1px 0 rgba(46,44,41,.05), 0 24px 50px -30px rgba(46,44,41,.5); transition: opacity 1s ease, transform 1s ease; }
+.portrait { position: absolute; left: 50%; top: 47%; transform: translate(-50%, -50%); height: min(72%, 600px); aspect-ratio: 3 / 4; border: 1px solid var(--line); border-radius: 3px; background: var(--sheet); overflow: hidden; box-shadow: 0 1px 0 rgba(46,44,41,.05), 0 24px 50px -30px rgba(46,44,41,.5); }
 .portrait img, .portrait svg { width: 100%; height: 100%; object-fit: cover; display: block; }
-.portrait.off { opacity: 0; transform: translate(-50%, -44%) scale(.98); pointer-events: none; }
+.portrait { pointer-events: none; will-change: opacity, transform; }
 .portrait[hidden] { display: none; }
 .hello .lead { font-size: 19px; color: var(--text-2); }
 .hello .toc { font-size: 15px; color: var(--mid); margin-top: 1.4rem; }

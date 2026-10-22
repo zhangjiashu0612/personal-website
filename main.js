@@ -223,11 +223,12 @@ function revealRow(it) {
 function select(it, fromBrain) {
   if (selected && selected !== it) paint(selected, false);
   selected = it;
-  if (!it) { showCard(hovered, false); if (hovered) paint(hovered, true); camOwner = 'section'; applySection(true); return; }
+  if (!it) { hideFrame(); showCard(hovered, false); if (hovered) paint(hovered, true); camOwner = 'section'; applySection(true); return; }
+  if (it.key === 'focuskit') showFrame(true); else hideFrame();
   paint(it, true); showCard(it, true);
   document.querySelectorAll('.piece-list li.on').forEach(n => n.classList.remove('on'));
   document.querySelectorAll(`.piece-list li[data-key="${it.key}"]`).forEach(n => n.classList.add('on'));
-  camOwner = 'select'; flyTo(viewOf(it), 1000);
+  camOwner = 'select'; flyTo(it.key === 'focuskit' ? { theta: -2.35, phi: 1.25, r: fit * 1.12, tx: 0, ty: -0.12, tz: -0.15 } : viewOf(it), 1000);
   el.views.querySelectorAll('button').forEach(b => b.classList.remove('on'));
   if (fromBrain) revealRow(it);
 }
@@ -298,8 +299,8 @@ el.views.addEventListener('click', e => {
 
 // ---------- assembly: the brain puts itself together ----------
 let assembling = false, assembled = false, finishAssembly = () => {};
-async function assemble(fromHead) {
-  assembling = true; assembled = true;
+async function assemble(quick) {
+  assembling = true; assembled = true; const ST = quick ? 170 : 300, DUR = quick ? 700 : 950;
   const projects = items.filter(i => i.kind === 'project'), missing = items.filter(i => i.kind === 'missing');
   projects.forEach(it => it.pieces.forEach(p => { p.pivot.visible = false; p.socket.visible = true; }));
   let done = false;
@@ -314,11 +315,11 @@ async function assemble(fromHead) {
   };
   finishAssembly = finalState;
   if (reduceMotion) { finalState(); return; }
-  if (!fromHead) {
+  if (!quick) {
     tween(3800, k => { cam.theta = 1.3 + (HOME.theta - 1.3) * k; goal.theta = cam.theta; }, easeInOut);
     await tween(900, k => { matNeutral.opacity = k; matMissing.opacity = k; mats.edgeMat.opacity = 0.16 * k; });
     for (const m of [matNeutral, matMissing]) { m.transparent = false; m.needsUpdate = true; }
-  } else await wait(200);
+  } else await wait(120);
   if (done) return;
   el.caption.classList.add('on');
   const axis = new THREE.Vector3(), q0 = new THREE.Quaternion(), qi = new THREE.Quaternion();
@@ -328,9 +329,9 @@ async function assemble(fromHead) {
     it.pieces.forEach((p, j) => {
       p.pivot.visible = true; axis.copy(p.out).cross(new THREE.Vector3(0, 1, 0)).normalize(); if (!axis.lengthSq()) axis.set(1, 0, 0);
       q0.setFromAxisAngle(axis, 0.55 * (j % 2 ? -1 : 1));
-      tween(950 + j * 60, k => { p.pivot.position.copy(p.center).addScaledVector(p.out, 1.25 * (1 - k)); p.pivot.quaternion.copy(q0).slerp(qi, k); }, easeOutBack).then(() => { p.socket.visible = false; });
+      tween(DUR + j * 60, k => { p.pivot.position.copy(p.center).addScaledVector(p.out, 1.25 * (1 - k)); p.pivot.quaternion.copy(q0).slerp(qi, k); }, easeOutBack).then(() => { p.socket.visible = false; });
     });
-    await wait(300);
+    await wait(ST);
   }
   await wait(500); if (done) return;
   el.caption.textContent = 'and what is missing';
@@ -340,7 +341,7 @@ async function assemble(fromHead) {
 }
 
 // ---------- the glasses: his frame, docked where a face would be ----------
-let frame = null, frameRest = null, frameLoading = null;
+let frame = null, frameRest = null, frameLoading = null, frameToken = 0;
 function loadFrame() {
   if (frameLoading || !THREE.GLTFLoader) return frameLoading;
   frameLoading = new Promise(res => new THREE.GLTFLoader().load('assets/frame.glb', gltf => {
@@ -361,13 +362,13 @@ function loadFrame() {
   return frameLoading;
 }
 async function showFrame(slide) {
-  const f = await loadFrame(); if (!f) return;
+  const my = ++frameToken; const f = await loadFrame(); if (!f || my !== frameToken) return;
   f.visible = true;
   if (!slide) { f.position.copy(frameRest); f.rotation.set(0, 0, 0); return; }
   const from = frameRest.clone().add(new THREE.Vector3(-3.6, 0.7, -2.4));
   await tween(2200, k => { f.position.lerpVectors(from, frameRest, k); f.rotation.y = -0.55 * (1 - k); f.rotation.z = 0.08 * (1 - k); }, easeOutCubic);
 }
-function hideFrame() { if (frame) frame.visible = false; }
+function hideFrame() { frameToken++; if (frame) frame.visible = false; }
 
 // ---------- the paper strip: a live line from the temple ----------
 const live = { on: false, t: 0, samples: [], last: 0, burst: 5 }; let noiseState = 0;
@@ -454,14 +455,13 @@ $('#replay').addEventListener('click', e => { e.preventDefault(); story.played =
 
 function weatherEl(key, text, chip) { const m = chip ? chipEls : weatherEls; let s = m.get(key); if (!s) { s = document.createElement('span'); if (chip) s.className = 'chip'; el.weather.appendChild(s); m.set(key, s); } s.textContent = text; return s; }
 function clearWeather() { el.weather.innerHTML = ''; weatherEls.clear(); chipEls.clear(); }
-function clearBuild() { endStory(true); hideFrame(); paperOn(false); clearWeather(); el.mech.innerHTML = ''; mechEls = []; el.caption.classList.remove('on'); stage.classList.remove('quiet'); items.forEach(it => { if (it.kind === 'project') it.pieces.forEach(p => { if (p.mesh.material === it.fade) p.mesh.material = it.mat; }); }); }
+function clearBuild() { endStory(true); paperOn(false); clearWeather(); el.mech.innerHTML = ''; mechEls = []; el.caption.classList.remove('on'); stage.classList.remove('quiet'); items.forEach(it => { if (it.kind === 'project') it.pieces.forEach(p => { if (p.mesh.material === it.fade) p.mesh.material = it.mat; }); }); }
 function startStory() {
   if (!renderer || !meshes.length || story.on) return;
   story.on = true; story.done = false; story.t0 = performance.now(); stage.classList.add('quiet');
   camOwner = 'story'; flyTo(home({ r: fit * 1.06 }), 1200);
   items.forEach(it => { if (it.kind === 'project') { it.fade.color.copy(it.mat.color); it.pieces.forEach(p => { p.mesh.material = it.fade; }); } });
   S.build.weather.forEach(w => weatherEl(w.key, w.word, false));
-  loadFrame();
 }
 const grey = srgb(NEUTRAL);
 function storyFrame(now) {
@@ -477,7 +477,7 @@ function storyFrame(now) {
     s.style.left = ((v3.x + 1) / 2 * stage.clientWidth) + 'px'; s.style.top = ((1 - v3.y) / 2 * stage.clientHeight - Math.max(0, u) * 10) + 'px'; s.style.opacity = op;
   });
   // beat 2: the frame arrives
-  if (t > 3.2 && !story.frameShown) { story.frameShown = true; flyTo({ theta: -2.5, phi: 1.25, r: fit * 1.3, tx: 0, ty: -0.15, tz: -0.2 }, 1600); showFrame(true); }
+  if (t > 3.2 && !story.frameShown) { story.frameShown = true; flyTo({ theta: -2.5, phi: 1.25, r: fit * 1.1, tx: 0, ty: 0, tz: 0 }, 1600); }
   if (t > 4.2 && t < 7.6) { el.caption.textContent = 'A century ago, bad eyesight was fate.'; el.caption.classList.add('on'); }
   // beat 3: the temple lights, the line writes, the colours come back
   if (t > 7.6 && !story.paper) { story.paper = true; paperOn(true); el.caption.textContent = 'Measure it. See it change. Nudge it.'; const fk = byKey.get('focuskit'); pulse(fk.pieces); }
@@ -489,7 +489,7 @@ function endStory(silent) {
   items.forEach(it => { if (it.kind === 'project') it.pieces.forEach(p => { if (p.mesh.material === it.fade) p.mesh.material = it.mat; }); });
   weatherEls.forEach(s => s.remove()); weatherEls.clear(); el.caption.classList.remove('on'); stage.classList.remove('quiet');
   if (silent) return;
-  showFrame(false); paperOn(true);
+  paperOn(true);
   if (!story.chips) Object.entries(S.build.chips).forEach(([k, txt]) => { weatherEl(k, txt, true).style.opacity = 1; });
   if (camOwner === 'story') camOwner = 'section';
 }
@@ -497,7 +497,7 @@ function placeChips() {
   chipEls.forEach((s, key) => { const an = stateAnchor(stateByKey.get(key)); if (!an) return; camDir.copy(camera.position).sub(v3.copy(an.a).sub(C0)).normalize(); const facing = camDir.dot(an.o); v3.copy(an.a).sub(C0).addScaledVector(an.o, 0.06).project(camera); s.style.left = ((v3.x + 1) / 2 * stage.clientWidth) + 'px'; s.style.top = ((1 - v3.y) / 2 * stage.clientHeight) + 'px'; s.style.visibility = facing > 0.05 ? 'visible' : 'hidden'; });
 }
 function showMechanics() {
-  showFrame(false); paperOn(true); el.mech.innerHTML = ''; mechEls = [];
+  paperOn(true); el.mech.innerHTML = ''; mechEls = [];
   const fk = byKey.get('focuskit'), pc = pieceById.get('lh-postcentral');
   const mk = (n, text, anchor) => { const d = document.createElement('div'); d.className = 'm'; d.innerHTML = `<i>${n}</i><b>${text}</b>`; el.mech.appendChild(d); mechEls.push({ el: d, anchor }); requestAnimationFrame(() => d.classList.add('on')); };
   mk(1, 'Readout', { a: fk.anchor, o: fk.out }); mk(2, 'Decision', { fixed: [0.12, 0.74] }); mk(3, 'Lever', pc ? { a: pc.anchor, o: pc.out } : { fixed: [0.5, 0.3] }); mk(4, 'Test', { fixed: [0.84, 0.74] });
@@ -513,34 +513,37 @@ function placeMech() {
 // ---------- sections: what the brain does while you read ----------
 const sections = [...document.querySelectorAll('.copy section')];
 const dots = $('#rail-dots'); sections.forEach(s => { const a = document.createElement('a'); a.href = '#' + s.id; a.title = s.querySelector('h1, h2').textContent; dots.appendChild(a); });
-let activeId = null, activeCam = null, revealed = false;
+let activeId = null, activeCam = null;
 const mobile = matchMedia('(max-width: 900px)').matches;
-const portrait = $('#portrait');
-function showBrainNow() { for (const m of [matNeutral, matMissing]) { m.opacity = 1; m.transparent = false; m.needsUpdate = true; } mats.edgeMat.opacity = 0.16; world.visible = true; }
-function reveal(instant) {
-  if (revealed || !mats) return; revealed = true;
-  if (instant || reduceMotion) { portrait.hidden = true; showBrainNow(); if (!assembled) assemble(); return; }
-  emerge();
-}
-let emerging = false;
-async function emerge() {
-  // the grey brain rises out of the head in the portrait, then takes the stage; all of it in screen space on the canvas itself
-  showBrainNow(); emerging = true; lastInput = performance.now();
-  Object.assign(cam, home()); Object.assign(goal, cam); flying = false; applyCamera();
-  const wrap = $('#brainwrap'), pr = portrait.getBoundingClientRect(), sr = stage.getBoundingClientRect(), H = S.photoHead || { x: 0.5, y: 0.34, crown: 0.19 };
+const portrait = $('#portrait'), wrap = $('#brainwrap');
+const em = { p: 0, target: 0, done: false };                                    // the emergence, scrubbed by scroll
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+const lerp = (a, b, k) => a + (b - a) * k;
+function emergeTarget() { const h = $('#hello'); return Math.min(1, Math.max(0, scrollY / Math.max(1, h.offsetHeight * 0.38))); }
+function applyEmerge(p) {
+  const pr = portrait.getBoundingClientRect(), sr = stage.getBoundingClientRect(), H = S.photoHead || { x: 0.5, y: 0.34, crown: 0.19 };
   const cx = sr.width / 2, cy = sr.height / 2;
   const headX = pr.left - sr.left + H.x * pr.width, headY = pr.top - sr.top + H.y * pr.height, crownY = pr.top - sr.top + H.crown * pr.height;
-  const R = 0.46 * Math.min(sr.width, sr.height);                                   // the brain's radius on screen at full size, near enough
-  const s0 = 0.26, s1 = 0.4;
-  const y0 = headY + R * s0 * 0.2, y1 = crownY - R * s1 * 1.04;                     // from inside the head to clear of the crown
-  const set = (x, y, k) => { canvas.style.transform = `translate(${(x - cx).toFixed(1)}px, ${(y - cy).toFixed(1)}px) scale(${k.toFixed(4)})`; };
-  wrap.style.clipPath = `inset(0 0 ${(sr.height - crownY).toFixed(1)}px 0)`;
-  set(headX, y0, s0);
-  await wait(250);
-  await tween(1900, k => set(headX, y0 + (y1 - y0) * k, s0 + (s1 - s0) * k), easeInOut);
-  wrap.style.clipPath = ''; portrait.classList.add('off');
-  await tween(1400, k => set(headX + (cx - headX) * k, y1 + (cy - y1) * k, s1 + (1 - s1) * k), easeInOut);
-  canvas.style.transform = ''; portrait.hidden = true; emerging = false;
+  const R = 0.46 * Math.min(sr.width, sr.height), s0 = 0.22, s1 = 0.42;
+  const a = smooth(0, 0.6, p), b = smooth(0.45, 1, p);
+  const y0 = headY + 24, y1 = crownY - R * s1 * 1.02;
+  const x = lerp(headX, cx, b), y = lerp(lerp(y0, y1, a), cy, b), k = lerp(lerp(s0, s1, a), 1, b);
+  canvas.style.transform = `translate(${(x - cx).toFixed(1)}px, ${(y - cy).toFixed(1)}px) scale(${k.toFixed(4)})`;
+  const line = crownY + b * (sr.height + 60 - crownY);                           // the soft edge the brain rises through, then it leaves
+  const m = `linear-gradient(to bottom, #000 ${(line - 34).toFixed(1)}px, transparent ${line.toFixed(1)}px)`; wrap.style.webkitMaskImage = m; wrap.style.maskImage = m;
+  portrait.style.opacity = (1 - b).toFixed(3); portrait.style.transform = `translate(-50%, calc(-50% + ${(b * 26).toFixed(1)}px)) scale(${(1 - 0.03 * b).toFixed(4)})`;
+  cam.phi = lerp(0.72, HOME.phi, smooth(0, 1, p)); cam.theta = lerp(HOME.theta - 0.4, HOME.theta, smooth(0, 1, p)); cam.r = fit; cam.tx = cam.ty = cam.tz = 0; Object.assign(goal, cam);
+}
+function emergeFrame(dt) {
+  if (em.done || !mats) return;
+  em.p += (em.target - em.p) * (1 - Math.pow(0.0004, dt));
+  applyEmerge(em.p);
+  if (em.target >= 1 && em.p > 0.992) finishEmerge();
+}
+function finishEmerge() {
+  if (em.done) return; em.done = true;
+  canvas.style.transform = ''; wrap.style.webkitMaskImage = wrap.style.maskImage = ''; portrait.hidden = true; stage.classList.remove('quiet');
+  Object.assign(cam, home()); Object.assign(goal, cam);
   if (!assembled) assemble(true);
 }
 function currentSection() {
@@ -554,8 +557,8 @@ function applySection(force) {
   if (!force && id === activeId) return;
   const prev = activeCam; activeId = id; activeCam = camKind;
   if (!renderer || !meshes.length) return;
-  if (id !== 'hello' && !revealed) reveal(false);
-  if (!revealed) return;
+  if (id !== 'hello' && !em.done) finishEmerge();
+  if (!em.done) return;
   if (assembling) { if (id === 'hello' || id === 'work') return; finishAssembly(); return; }
   if (prev === 'build' && camKind !== 'build') clearBuild();
   if (prev === 'temple' && camKind !== 'temple') { paperOn(false); electrodeDot.classList.remove('on'); }
@@ -566,11 +569,11 @@ function applySection(force) {
   if (camKind === 'home') { camOwner = 'section'; flyTo(home(), 1100); }
   else if (camKind === 'temple') { camOwner = 'section'; const fk = byKey.get('focuskit'); flyTo(viewOf(fk, 0.8, 0.4), 1200); paperOn(true); electrodeDot.classList.add('on'); }
   else if (camKind === 'hold') { if (chosen) chooseState(chosen, false); else { camOwner = 'section'; flyTo(home({ r: fit * 0.95 }), 1000); } }
-  else if (camKind === 'build') { if (buildView === 'story') { if (!story.played) startStory(); else { camOwner = 'section'; flyTo(home({ r: fit * 1.06 }), 1000); endStory(false); showFrame(false); } } else { camOwner = 'section'; flyTo({ theta: -1.9, phi: 1.2, r: fit * 1.02, tx: 0, ty: 0, tz: 0 }, 1000); showMechanics(); } }
+  else if (camKind === 'build') { if (buildView === 'story') { if (!story.played) startStory(); else { camOwner = 'section'; flyTo(home({ r: fit * 1.06 }), 1000); endStory(false); } } else { camOwner = 'section'; flyTo({ theta: -1.9, phi: 1.2, r: fit * 1.02, tx: 0, ty: 0, tz: 0 }, 1000); showMechanics(); } }
   else if (camKind === 'missing') { camOwner = 'section'; flyTo({ theta: -2.75, phi: 0.95, r: fit, tx: 0, ty: 0, tz: 0 }, 1100); }
   else if (camKind === 'orbit') { camOwner = 'section'; swayAmp = 0.32; flyTo(home({ r: fit * 1.08 }), 1200); }
 }
-let scrollTick = false; addEventListener('scroll', () => { if (scrollTick) return; scrollTick = true; requestAnimationFrame(() => { scrollTick = false; applySection(false); }); }, { passive: true });
+let scrollTick = false; addEventListener('scroll', () => { if (!em.done) em.target = emergeTarget(); if (scrollTick) return; scrollTick = true; requestAnimationFrame(() => { scrollTick = false; applySection(false); }); }, { passive: true });
 
 // ---------- labels that follow the brain ----------
 const v3 = new THREE.Vector3(), camDir = new THREE.Vector3();
@@ -619,9 +622,9 @@ let last = performance.now();
 function frameLoop(now) {
   requestAnimationFrame(frameLoop);
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
-  runTweens(now); storyFrame(now); liveFrame(dt);
-  if (!flying) { const k = 1 - Math.pow(0.001, dt); for (const key of ['theta', 'phi', 'r', 'tx', 'ty', 'tz']) cam[key] += (goal[key] - cam[key]) * k; }
-  const idle = (now - lastInput) / 1000 > 3 && !selected && !assembling && !emerging && !story.on && !reduceMotion && camOwner !== 'state';
+  runTweens(now); emergeFrame(dt); storyFrame(now); liveFrame(dt);
+  if (!flying && em.done) { const k = 1 - Math.pow(0.001, dt); for (const key of ['theta', 'phi', 'r', 'tx', 'ty', 'tz']) cam[key] += (goal[key] - cam[key]) * k; }
+  const idle = (now - lastInput) / 1000 > 3 && !selected && !assembling && em.done && !story.on && !reduceMotion && camOwner !== 'state';
   const swayGoal = idle ? Math.sin(now * 0.00035) * swayAmp : 0;
   sway += (swayGoal - sway) * (1 - Math.pow(idle ? 0.3 : 0.02, dt));
   applyCamera(); placeLabels(); renderer.render(scene, camera);
@@ -630,7 +633,7 @@ if (chosen) chooseState(chosen, false);
 window.__brain = { pick: (x, y) => pick(x, y), items, pieces, camera, get meshes() { return meshes; }, hover, select, chooseState, startStory, applySection, showFrame, hideFrame, get frame() { return frame; }, brainBox, C0, flyTo, get fit() { return fit; } };
 if (renderer) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.outputEncoding = THREE.sRGBEncoding; renderer.setClearColor(0x000000, 0);
-  load().then(m => { mats = m; el.loading.classList.add('off'); world.visible = false; items.forEach(it => it.pieces.forEach(p => { if (it.kind === 'project') { p.pivot.visible = false; p.socket.visible = true; } })); applyCamera(); requestAnimationFrame(frameLoop); loadFrame(); if (currentSection().id !== 'hello') reveal(true); })
+  load().then(m => { mats = m; el.loading.classList.add('off'); for (const x of [matNeutral, matMissing]) { x.opacity = 1; x.transparent = false; x.needsUpdate = true; } mats.edgeMat.opacity = 0.16; items.forEach(it => it.pieces.forEach(p => { if (it.kind === 'project') { p.pivot.visible = false; p.socket.visible = true; } })); stage.classList.add('quiet'); em.target = emergeTarget(); em.p = em.target >= 1 ? 1 : 0; applyEmerge(em.p); applyCamera(); requestAnimationFrame(frameLoop); loadFrame(); if (em.target >= 1 || currentSection().id !== 'hello') finishEmerge(); })
     .catch(err => { console.error(err); el.loading.textContent = 'The brain did not load. The pieces are listed below.'; });
 }
 })();
