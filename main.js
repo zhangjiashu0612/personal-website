@@ -31,12 +31,11 @@ S.missing.forEach((m, i) => items.push({ ...m, kind: 'missing', index: S.project
 const byKey = new Map(items.map(it => [it.key, it]));
 
 $('#hello-hey').textContent = S.hello.hey; $('#hello-h1').textContent = S.hello.h1; $('#hello-lead').textContent = S.hello.lead; $('#hello-toc').textContent = S.hello.toc || '';
-if (S.photo) $('#hello-photo').innerHTML = `<img src="${S.photo}" alt="Lucas Zhang">`;
 $('#mail-link').href = 'mailto:' + S.email; $('#mail-link').textContent = S.email;
 ['#rail-gh', '#top-gh', '#who-github'].forEach(q => { $(q).href = S.github; }); ['#rail-mail', '#top-mail', '#who-mail'].forEach(q => { $(q).href = 'mailto:' + S.email; });
 $('#who-lines').innerHTML = S.who.map(l => `<span>${l}</span>`).join('<br>');
 if (S.cv) { const a = $('#cv-link'); a.href = S.cv; a.hidden = false; }
-if (S.photo) { $('#who-photo').innerHTML = `<img src="${S.photo}" alt="Lucas Zhang">`; }
+if (S.photo) { $('#who-photo').innerHTML = `<img src="${S.photo}" alt="Lucas Zhang">`; $('#portrait').innerHTML = `<img src="${S.photo}" alt="Lucas Zhang">`; }
 $('#looking-text').textContent = S.looking;
 $('#now-when').textContent = S.now.when;
 $('#now-lines').innerHTML = S.now.lines.map(l => `<li>${l}</li>`).join('');
@@ -299,7 +298,7 @@ el.views.addEventListener('click', e => {
 
 // ---------- assembly: the brain puts itself together ----------
 let assembling = false, assembled = false, finishAssembly = () => {};
-async function assemble() {
+async function assemble(fromHead) {
   assembling = true; assembled = true;
   const projects = items.filter(i => i.kind === 'project'), missing = items.filter(i => i.kind === 'missing');
   projects.forEach(it => it.pieces.forEach(p => { p.pivot.visible = false; p.socket.visible = true; }));
@@ -315,9 +314,11 @@ async function assemble() {
   };
   finishAssembly = finalState;
   if (reduceMotion) { finalState(); return; }
-  tween(3800, k => { cam.theta = 1.3 + (HOME.theta - 1.3) * k; goal.theta = cam.theta; }, easeInOut);
-  await tween(900, k => { matNeutral.opacity = k; matMissing.opacity = k; mats.edgeMat.opacity = 0.16 * k; });
-  for (const m of [matNeutral, matMissing]) { m.transparent = false; m.needsUpdate = true; }
+  if (!fromHead) {
+    tween(3800, k => { cam.theta = 1.3 + (HOME.theta - 1.3) * k; goal.theta = cam.theta; }, easeInOut);
+    await tween(900, k => { matNeutral.opacity = k; matMissing.opacity = k; mats.edgeMat.opacity = 0.16 * k; });
+    for (const m of [matNeutral, matMissing]) { m.transparent = false; m.needsUpdate = true; }
+  } else await wait(200);
   if (done) return;
   el.caption.classList.add('on');
   const axis = new THREE.Vector3(), q0 = new THREE.Quaternion(), qi = new THREE.Quaternion();
@@ -514,8 +515,34 @@ const sections = [...document.querySelectorAll('.copy section')];
 const dots = $('#rail-dots'); sections.forEach(s => { const a = document.createElement('a'); a.href = '#' + s.id; a.title = s.querySelector('h1, h2').textContent; dots.appendChild(a); });
 let activeId = null, activeCam = null, revealed = false;
 const mobile = matchMedia('(max-width: 900px)').matches;
-if (!mobile) stage.classList.add('intro');
-function reveal() { if (revealed) return; revealed = true; stage.classList.remove('intro'); if (mats && !assembling && !assembled) assemble(); }
+const portrait = $('#portrait');
+function showBrainNow() { for (const m of [matNeutral, matMissing]) { m.opacity = 1; m.transparent = false; m.needsUpdate = true; } mats.edgeMat.opacity = 0.16; world.visible = true; }
+function reveal(instant) {
+  if (revealed || !mats) return; revealed = true;
+  if (instant || reduceMotion) { portrait.hidden = true; showBrainNow(); if (!assembled) assemble(); return; }
+  emerge();
+}
+let emerging = false;
+async function emerge() {
+  // the grey brain rises out of the head in the portrait, then takes the stage; all of it in screen space on the canvas itself
+  showBrainNow(); emerging = true; lastInput = performance.now();
+  Object.assign(cam, home()); Object.assign(goal, cam); flying = false; applyCamera();
+  const wrap = $('#brainwrap'), pr = portrait.getBoundingClientRect(), sr = stage.getBoundingClientRect(), H = S.photoHead || { x: 0.5, y: 0.34, crown: 0.19 };
+  const cx = sr.width / 2, cy = sr.height / 2;
+  const headX = pr.left - sr.left + H.x * pr.width, headY = pr.top - sr.top + H.y * pr.height, crownY = pr.top - sr.top + H.crown * pr.height;
+  const R = 0.46 * Math.min(sr.width, sr.height);                                   // the brain's radius on screen at full size, near enough
+  const s0 = 0.26, s1 = 0.4;
+  const y0 = headY + R * s0 * 0.2, y1 = crownY - R * s1 * 1.04;                     // from inside the head to clear of the crown
+  const set = (x, y, k) => { canvas.style.transform = `translate(${(x - cx).toFixed(1)}px, ${(y - cy).toFixed(1)}px) scale(${k.toFixed(4)})`; };
+  wrap.style.clipPath = `inset(0 0 ${(sr.height - crownY).toFixed(1)}px 0)`;
+  set(headX, y0, s0);
+  await wait(250);
+  await tween(1900, k => set(headX, y0 + (y1 - y0) * k, s0 + (s1 - s0) * k), easeInOut);
+  wrap.style.clipPath = ''; portrait.classList.add('off');
+  await tween(1400, k => set(headX + (cx - headX) * k, y1 + (cy - y1) * k, s1 + (1 - s1) * k), easeInOut);
+  canvas.style.transform = ''; portrait.hidden = true; emerging = false;
+  if (!assembled) assemble(true);
+}
 function currentSection() {
   const mid = innerHeight * 0.45; let best = sections[0];
   for (const s of sections) { const r = s.getBoundingClientRect(); if (r.top <= mid) best = s; }
@@ -527,7 +554,7 @@ function applySection(force) {
   if (!force && id === activeId) return;
   const prev = activeCam; activeId = id; activeCam = camKind;
   if (!renderer || !meshes.length) return;
-  if (id !== 'hello' && !revealed) reveal();
+  if (id !== 'hello' && !revealed) reveal(false);
   if (!revealed) return;
   if (assembling) { if (id === 'hello' || id === 'work') return; finishAssembly(); return; }
   if (prev === 'build' && camKind !== 'build') clearBuild();
@@ -594,7 +621,7 @@ function frameLoop(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   runTweens(now); storyFrame(now); liveFrame(dt);
   if (!flying) { const k = 1 - Math.pow(0.001, dt); for (const key of ['theta', 'phi', 'r', 'tx', 'ty', 'tz']) cam[key] += (goal[key] - cam[key]) * k; }
-  const idle = (now - lastInput) / 1000 > 3 && !selected && !assembling && !story.on && !reduceMotion && camOwner !== 'state';
+  const idle = (now - lastInput) / 1000 > 3 && !selected && !assembling && !emerging && !story.on && !reduceMotion && camOwner !== 'state';
   const swayGoal = idle ? Math.sin(now * 0.00035) * swayAmp : 0;
   sway += (swayGoal - sway) * (1 - Math.pow(idle ? 0.3 : 0.02, dt));
   applyCamera(); placeLabels(); renderer.render(scene, camera);
@@ -603,7 +630,7 @@ if (chosen) chooseState(chosen, false);
 window.__brain = { pick: (x, y) => pick(x, y), items, pieces, camera, get meshes() { return meshes; }, hover, select, chooseState, startStory, applySection, showFrame, hideFrame, get frame() { return frame; }, brainBox, C0, flyTo, get fit() { return fit; } };
 if (renderer) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.outputEncoding = THREE.sRGBEncoding; renderer.setClearColor(0x000000, 0);
-  load().then(m => { mats = m; el.loading.classList.add('off'); applyCamera(); requestAnimationFrame(frameLoop); loadFrame(); if (mobile || currentSection().id !== 'hello') reveal(); else { items.forEach(it => it.pieces.forEach(p => { if (it.kind === 'project') { p.pivot.visible = false; p.socket.visible = true; } })); } })
+  load().then(m => { mats = m; el.loading.classList.add('off'); world.visible = false; items.forEach(it => it.pieces.forEach(p => { if (it.kind === 'project') { p.pivot.visible = false; p.socket.visible = true; } })); applyCamera(); requestAnimationFrame(frameLoop); loadFrame(); if (currentSection().id !== 'hello') reveal(true); })
     .catch(err => { console.error(err); el.loading.textContent = 'The brain did not load. The pieces are listed below.'; });
 }
 })();

@@ -48,7 +48,8 @@ p { margin: 0 0 1em; max-width: min(var(--measure), 100%); }
 .layout { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); margin-left: var(--rail); min-height: 100vh; }
 .copy { padding: 12vh 6vw 10vh 5.5vw; }
 .stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
-#brain { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+.brainwrap { position: absolute; inset: 0; }
+#brain { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; transform-origin: 50% 50%; will-change: transform; }
 #brain.dragging { cursor: grabbing; }
 #brain.hot { cursor: pointer; }
 .stage.probing #brain { cursor: crosshair; }
@@ -148,17 +149,17 @@ h2 { margin-bottom: 1.4rem; }
 
 /* sections: scroll-linked choreography on the right */
 section { scroll-margin-top: 10vh; }
-.hello { min-height: 76vh; display: flex; flex-direction: column; justify-content: center; width: min(165%, 62rem); position: relative; z-index: 2; }
-.hello h1 { font-size: clamp(34px, 4.4vw, 64px); line-height: 1.04; margin: 0 0 1.4rem; max-width: 20ch; }
+.hello { min-height: 76vh; display: flex; flex-direction: column; justify-content: center; }
+.hello h1 { font-size: clamp(32px, 3.6vw, 52px); line-height: 1.06; margin: 0 0 1.4rem; max-width: 18ch; }
 .hello .lead { max-width: 34rem; }
 .hello .toc:empty { display: none; }
-.hello-photo { width: 96px; height: 96px; border-radius: 50%; border: 1px dashed var(--line); display: flex; align-items: center; justify-content: center; font: italic 13px var(--display); color: var(--light); overflow: hidden; margin-bottom: 1.8rem; background: var(--sheet); }
-.hello-photo img { width: 100%; height: 100%; object-fit: cover; }
 .scrollcue { display: inline-block; width: 22px; height: 36px; border: 1px solid var(--line); border-radius: 11px; margin-top: 2.6rem; position: relative; }
 .scrollcue span { position: absolute; left: 50%; top: 7px; width: 3px; height: 7px; margin-left: -1.5px; border-radius: 2px; background: var(--mid); animation: cue 1.8s ease-in-out infinite; }
 @keyframes cue { 0%, 100% { transform: translateY(0); opacity: 1; } 60% { transform: translateY(12px); opacity: 0; } 61% { transform: translateY(0); opacity: 0; } }
-.stage { transition: opacity .9s ease, transform .9s cubic-bezier(.2,.7,.2,1); }
-.stage.intro { opacity: 0; transform: translateX(4%); pointer-events: none; }
+.portrait { position: absolute; left: 50%; top: 47%; transform: translate(-50%, -50%); height: min(72%, 600px); aspect-ratio: 3 / 4; border: 1px solid var(--line); border-radius: 3px; background: var(--sheet); overflow: hidden; box-shadow: 0 1px 0 rgba(46,44,41,.05), 0 24px 50px -30px rgba(46,44,41,.5); transition: opacity 1s ease, transform 1s ease; }
+.portrait img, .portrait svg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.portrait.off { opacity: 0; transform: translate(-50%, -44%) scale(.98); pointer-events: none; }
+.portrait[hidden] { display: none; }
 .hello .lead { font-size: 19px; color: var(--text-2); }
 .hello .toc { font-size: 15px; color: var(--mid); margin-top: 1.4rem; }
 .when { font-family: var(--display); font-style: italic; font-size: 16px; letter-spacing: 0; text-transform: none; color: var(--light); margin-left: 10px; }
@@ -239,10 +240,9 @@ section { scroll-margin-top: 10vh; }
   .layout { grid-template-columns: 1fr; margin-left: 0; }
   .stage { order: -1; position: sticky; top: 49px; height: 46vh; min-height: 300px; z-index: 3; background: var(--paper); border-bottom: 1px solid var(--line); }
   .copy { padding: 6vh 18px 10vh; position: relative; z-index: 1; }
-  .hello { width: auto; min-height: 0; display: block; }
+  .hello { min-height: 0; display: block; }
   .hello h1 { font-size: clamp(28px, 8vw, 40px); }
-  .hello-photo { width: 72px; height: 72px; }
-  .stage.intro { opacity: 1; transform: none; pointer-events: auto; }
+  .portrait { height: 86%; }
   .scrollcue { display: none; }
   .counter { left: 14px; top: 12px; }
   .hint { display: none; }

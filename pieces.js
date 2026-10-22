@@ -4,7 +4,8 @@ window.SITE = {
   email: "zhangjiashu0612@gmail.com",
   github: "https://github.com/zhangjiashu0612",
   cv: "",                      // path to a PDF, e.g. "assets/lucas-zhang-cv.pdf"; empty = no CV link shown
-  photo: "",                   // path to a photo, e.g. "assets/lucas.jpg"; empty = no photo shown
+  photo: "",                   // path to a portrait (3:4 works best), e.g. "assets/lucas.jpg"; empty = a silhouette placeholder
+  photoHead: { x: 0.5, y: 0.34, crown: 0.19 },   // where the head is in that photo: centre x, centre y, top of the head, as fractions of the image
   who: [
     "First-year, neural engineering, University of Illinois Urbana-Champaign.",
     "Founder of FocusKit. Undergraduate researcher in a cognitive network neuroscience lab."
