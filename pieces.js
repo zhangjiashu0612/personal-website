@@ -10,10 +10,10 @@ window.SITE = {
     "Founder of FocusKit. Undergraduate researcher in a cognitive network neuroscience lab."
   ],
   hello: {
-    hey: "hi, this is Lucas. Thanks for coming by.",
-    h1: "I'm building a closed loop for the human brain.",
-    lead: "Read a state, nudge it, see it change. A routine for the mind, the kind we already have for the body.",
-    toc: "Below: what I've made, what I'm doing this month, and the bigger picture."
+    hey: "hi, this is Lucas.",
+    h1: "I'm dedicated to building closed-loop systems for neuromodulation.",
+    lead: "If you scroll down, you'll see what I've done so far.",
+    toc: ""
   },
   areas: [
     { title: "Molecules", keys: ["ad"] },

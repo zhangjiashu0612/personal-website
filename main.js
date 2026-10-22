@@ -30,7 +30,8 @@ S.projects.forEach((p, i) => items.push({ ...p, kind: 'project', index: i, piece
 S.missing.forEach((m, i) => items.push({ ...m, kind: 'missing', index: S.projects.length + i, pieces: [] }));
 const byKey = new Map(items.map(it => [it.key, it]));
 
-$('#hello-hey').textContent = S.hello.hey; $('#hello-h1').textContent = S.hello.h1; $('#hello-lead').textContent = S.hello.lead; $('#hello-toc').textContent = S.hello.toc;
+$('#hello-hey').textContent = S.hello.hey; $('#hello-h1').textContent = S.hello.h1; $('#hello-lead').textContent = S.hello.lead; $('#hello-toc').textContent = S.hello.toc || '';
+if (S.photo) $('#hello-photo').innerHTML = `<img src="${S.photo}" alt="Lucas Zhang">`;
 $('#mail-link').href = 'mailto:' + S.email; $('#mail-link').textContent = S.email;
 ['#rail-gh', '#top-gh', '#who-github'].forEach(q => { $(q).href = S.github; }); ['#rail-mail', '#top-mail', '#who-mail'].forEach(q => { $(q).href = 'mailto:' + S.email; });
 $('#who-lines').innerHTML = S.who.map(l => `<span>${l}</span>`).join('<br>');
@@ -192,7 +193,7 @@ async function load() {
   });
   items.filter(it => it.kind === 'missing').forEach(it => {
     const q = document.createElement('button'); q.className = 'q'; q.textContent = '?'; q.setAttribute('aria-label', it.title);
-    q.addEventListener('click', () => select(it)); q.addEventListener('mouseenter', () => { if (!coarse) hover(it, 'label'); }); q.addEventListener('mouseleave', () => { if (!coarse) hover(null, 'label'); });
+    q.addEventListener('click', () => select(it, true)); q.addEventListener('mouseenter', () => { if (!coarse) hover(it, 'label'); }); q.addEventListener('mouseleave', () => { if (!coarse) hover(null, 'label'); });
     el.labels.appendChild(q); it.marker = q;
   });
   // the electrode: a small gold dot that sits on the temple whenever the story wants it
@@ -215,7 +216,12 @@ function hover(it, source) {
   canvas.classList.toggle('hot', !!hovered && source === 'canvas');
   el.float.classList.toggle('on', !!hovered); if (hovered) el.float.textContent = hovered.title;
 }
-function select(it) {
+function revealRow(it) {
+  const row = document.querySelector(`.piece-list li[data-key="${it.key}"]`); if (!row) return;
+  document.querySelectorAll('.piece-list li.open').forEach(n => { if (n !== row) n.classList.remove('open'); }); row.classList.add('open');
+  const r = row.getBoundingClientRect(); if (r.top < 80 || r.bottom > innerHeight - 40) row.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+}
+function select(it, fromBrain) {
   if (selected && selected !== it) paint(selected, false);
   selected = it;
   if (!it) { showCard(hovered, false); if (hovered) paint(hovered, true); camOwner = 'section'; applySection(true); return; }
@@ -224,6 +230,7 @@ function select(it) {
   document.querySelectorAll(`.piece-list li[data-key="${it.key}"]`).forEach(n => n.classList.add('on'));
   camOwner = 'select'; flyTo(viewOf(it), 1000);
   el.views.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+  if (fromBrain) revealRow(it);
 }
 function showCard(it, full) {
   el.card.classList.toggle('on', !!it); el.card.classList.toggle('selected', !!it && full);
@@ -240,7 +247,7 @@ function showCard(it, full) {
 el.cardClose.addEventListener('click', () => select(null));
 addEventListener('keydown', e => {
   if (e.key === 'Escape') select(null);
-  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const i = selected ? selected.index : -1, n = items.length; select(items[(i + (e.key === 'ArrowRight' ? 1 : n - 1) + n) % n]); }
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const i = selected ? selected.index : -1, n = items.length; select(items[(i + (e.key === 'ArrowRight' ? 1 : n - 1) + n) % n], true); }
 });
 
 // ---------- pointer: orbit and pick ----------
@@ -272,12 +279,12 @@ canvas.addEventListener('pointermove', e => {
 });
 const endPointer = e => {
   if (!pointers.has(e.pointerId)) return; pointers.delete(e.pointerId);
-  if (pointers.size === 0) { canvas.classList.remove('dragging'); if (dragging && moved < 6) { const pc = pick(e.clientX, e.clientY); if (pc && pc.owner) select(pc.owner === selected ? null : pc.owner); else if (selected) select(null); } dragging = false; }
+  if (pointers.size === 0) { canvas.classList.remove('dragging'); if (dragging && moved < 6) { const pc = pick(e.clientX, e.clientY); if (pc && pc.owner) select(pc.owner === selected ? null : pc.owner, true); else if (selected) select(null); } dragging = false; }
   pinch0 = 0;
 };
 canvas.addEventListener('pointerup', endPointer); canvas.addEventListener('pointercancel', endPointer);
 canvas.addEventListener('pointerleave', () => { if (!coarse && hoverSource === 'canvas') { hover(null, 'canvas'); el.tip.classList.remove('on'); } });
-canvas.addEventListener('click', e => { if (performance.now() - lastDown < 600) return; if (assembling) { finishAssembly(); return; } if (story.on) { endStory(); return; } const pc = pick(e.clientX, e.clientY); if (pc && pc.owner) select(pc.owner === selected ? null : pc.owner); else if (selected) select(null); });
+canvas.addEventListener('click', e => { if (performance.now() - lastDown < 600) return; if (assembling) { finishAssembly(); return; } if (story.on) { endStory(); return; } const pc = pick(e.clientX, e.clientY); if (pc && pc.owner) select(pc.owner === selected ? null : pc.owner, true); else if (selected) select(null); });
 canvas.addEventListener('wheel', e => { e.preventDefault(); goal.r = Math.min(fit * 1.7, Math.max(fit * 0.45, goal.r * (1 + e.deltaY * 0.0012))); lastInput = performance.now(); camOwner = 'user'; el.hint.classList.add('off'); }, { passive: false });
 const VIEWS = { left: [-Math.PI / 2, 1.45], front: [Math.PI, 1.3], top: [-2.2, 0.12], right: [Math.PI / 2, 1.45], below: [-2.2, 3.0], inside: [Math.PI / 2, 1.5] };
 let insideOn = false;
@@ -291,9 +298,9 @@ el.views.addEventListener('click', e => {
 });
 
 // ---------- assembly: the brain puts itself together ----------
-let assembling = false, finishAssembly = () => {};
+let assembling = false, assembled = false, finishAssembly = () => {};
 async function assemble() {
-  assembling = true;
+  assembling = true; assembled = true;
   const projects = items.filter(i => i.kind === 'project'), missing = items.filter(i => i.kind === 'missing');
   projects.forEach(it => it.pieces.forEach(p => { p.pivot.visible = false; p.socket.visible = true; }));
   let done = false;
@@ -505,7 +512,10 @@ function placeMech() {
 // ---------- sections: what the brain does while you read ----------
 const sections = [...document.querySelectorAll('.copy section')];
 const dots = $('#rail-dots'); sections.forEach(s => { const a = document.createElement('a'); a.href = '#' + s.id; a.title = s.querySelector('h1, h2').textContent; dots.appendChild(a); });
-let activeId = null, activeCam = null;
+let activeId = null, activeCam = null, revealed = false;
+const mobile = matchMedia('(max-width: 900px)').matches;
+if (!mobile) stage.classList.add('intro');
+function reveal() { if (revealed) return; revealed = true; stage.classList.remove('intro'); if (mats && !assembling && !assembled) assemble(); }
 function currentSection() {
   const mid = innerHeight * 0.45; let best = sections[0];
   for (const s of sections) { const r = s.getBoundingClientRect(); if (r.top <= mid) best = s; }
@@ -517,7 +527,9 @@ function applySection(force) {
   if (!force && id === activeId) return;
   const prev = activeCam; activeId = id; activeCam = camKind;
   if (!renderer || !meshes.length) return;
-  if (assembling) { if (id === 'hello') return; finishAssembly(); return; }
+  if (id !== 'hello' && !revealed) reveal();
+  if (!revealed) return;
+  if (assembling) { if (id === 'hello' || id === 'work') return; finishAssembly(); return; }
   if (prev === 'build' && camKind !== 'build') clearBuild();
   if (prev === 'temple' && camKind !== 'temple') { paperOn(false); electrodeDot.classList.remove('on'); }
   if (camKind !== 'hold' && camKind !== 'state') showHemis(true, true);
@@ -591,7 +603,7 @@ if (chosen) chooseState(chosen, false);
 window.__brain = { pick: (x, y) => pick(x, y), items, pieces, camera, get meshes() { return meshes; }, hover, select, chooseState, startStory, applySection, showFrame, hideFrame, get frame() { return frame; }, brainBox, C0, flyTo, get fit() { return fit; } };
 if (renderer) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.outputEncoding = THREE.sRGBEncoding; renderer.setClearColor(0x000000, 0);
-  load().then(m => { mats = m; el.loading.classList.add('off'); applyCamera(); requestAnimationFrame(frameLoop); assemble(); loadFrame(); })
+  load().then(m => { mats = m; el.loading.classList.add('off'); applyCamera(); requestAnimationFrame(frameLoop); loadFrame(); if (mobile || currentSection().id !== 'hello') reveal(); else { items.forEach(it => it.pieces.forEach(p => { if (it.kind === 'project') { p.pivot.visible = false; p.socket.visible = true; } })); } })
     .catch(err => { console.error(err); el.loading.textContent = 'The brain did not load. The pieces are listed below.'; });
 }
 })();
