@@ -7,7 +7,7 @@ window.SITE = {
   photo: "assets/lucas.jpg",   // a portrait, 3:4 works best
   photoHead: { x: 0.51, y: 0.39, crown: 0.18 },   // where the head is in that photo: centre x, centre y, top of the head, as fractions of the image
   who: [
-    "EnterpriseWorks, 60 Hazelwood Drive",
+    "EnterpriseWorks 204, 60 Hazelwood Drive",
     "Champaign, Illinois 61820"
   ],
   hello: {
