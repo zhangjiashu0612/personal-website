@@ -40,7 +40,7 @@ $('#looking-text').textContent = S.looking;
 $('#now-when').textContent = S.now.when;
 $('#now-lines').innerHTML = S.now.lines.map(l => `<li>${l}</li>`).join('');
 $('#now-photos').innerHTML = S.now.photos.map(p => `<figure>${p.src ? `<img src="${p.src}" alt="" loading="lazy">` : `<div class="ph">photo</div>`}<figcaption>${p.caption}</figcaption></figure>`).join('');
-$('#question-text').textContent = S.question;
+if ($('#question-text')) $('#question-text').textContent = S.question || '';
 el.buildStory.innerHTML = S.build.story.map(t => `<p>${t}</p>`).join('');
 el.buildMech.innerHTML = S.build.mechanics.map(([h, t]) => `<p>${h ? `<b>${h}</b>` : ''}${t}</p>`).join('');
 
@@ -406,18 +406,18 @@ function liveFrame(dt) {
 
 // ---------- states: the question, and the words that drift like weather ----------
 const stateByKey = new Map(S.states.map(s => [s.key, s]));
-let chosen = (() => { try { return sessionStorage.getItem('state'); } catch (e) { return null; } })();
+let chosen = null;                                                               // the question section is parked; nothing is chosen
 const hotNeutral = aoMat({ color: srgb(NEUTRAL), emissive: srgb(ACCENT), emissiveIntensity: 0.35 });
 function stateRegions(st) { return st.regions.map(n => pieceById.get(n)).filter(Boolean); }
 function stateAnchor(st) { const ps = stateRegions(st); if (!ps.length) return null; const a = new THREE.Vector3(); ps.forEach(p => a.add(p.anchor)); a.divideScalar(ps.length); const o = new THREE.Vector3(); ps.forEach(p => o.add(p.out)); o.normalize(); return { a, o, hemi: ps[0].hemi }; }
-S.states.forEach(st => { const b = document.createElement('button'); b.textContent = st.label; b.dataset.key = st.key; b.addEventListener('click', () => chooseState(st.key, true)); el.choices.appendChild(b); });
-$('#statecard-change').addEventListener('click', e => { e.preventDefault(); chooseState(null, true); });
+if (el.choices) S.states.forEach(st => { const b = document.createElement('button'); b.textContent = st.label; b.dataset.key = st.key; b.addEventListener('click', () => chooseState(st.key, true)); el.choices.appendChild(b); });
+if ($('#statecard-change')) $('#statecard-change').addEventListener('click', e => { e.preventDefault(); chooseState(null, true); });
 function chooseState(key, animate) {
   chosen = key; try { key ? sessionStorage.setItem('state', key) : sessionStorage.removeItem('state'); } catch (e) {}
-  el.choices.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.key === key));
+  if (el.choices) el.choices.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.key === key));
   const st = key ? stateByKey.get(key) : null;
-  el.statecard.hidden = !st; if (st) el.statecardText.textContent = st.card;
-  el.buildPicked.hidden = !st; if (st) el.buildPicked.textContent = `You picked ${st.label}. Here is how it fits.`;
+  if (el.statecard) { el.statecard.hidden = !st; if (st) el.statecardText.textContent = st.card; }
+  if (el.buildPicked) { el.buildPicked.hidden = !st; if (st) el.buildPicked.textContent = `You picked ${st.label}. Here is how it fits.`; }
   if (!renderer || !meshes.length) return;
   if (!st) { showHemis(true, true); camOwner = 'section'; applySection(true); return; }
   camOwner = 'state'; showHemis(st.hide !== 'L', st.hide !== 'R');

@@ -105,23 +105,24 @@ window.SITE = {
       { src: "", caption: "the first fabric electrode" }
     ]
   },
-  question: "If you could change one thing about your brain today, which?",
+  // Four directions I want to take neuromodulation in later, with my current thinking on each. Not shown on the page yet;
+  // the regions are still used to place words in the story animation.
   states: [
     { key: "focus", label: "focus", regions: ["lh-parsorbitalis", "lh-parstriangularis", "lh-temporalpole"], view: { theta: -2.0, phi: 1.3 }, hide: null,
-      card: "Focus. The one I can read today, from one channel at the temple, a few seconds ahead. Whether a tap at that moment helps is what I'm testing now." },
+      card: "Focus is where I am starting, because it is the one state with a behavioural ground truth every few seconds. My current thinking: read it from one channel at the temple, act once with a tap, and judge the loop by whether a timed tap beats a random one." },
     { key: "sleep", label: "sleep", regions: ["rh-superiorfrontal", "lh-superiorfrontal"], view: { theta: 0.9, phi: 0.55 }, hide: null,
-      card: "Sleep. The best-studied state on the scalp. There is still nothing gentle enough to change it that fits into a nightly routine." },
+      card: "Sleep is the second direction. The readout has existed for seventy years; what is missing is a lever gentle enough to live in a nightly routine. My current thinking: timed sound or touch locked to the slow waves, tested the same way, timed against random." },
     { key: "thought", label: "a thought that loops", regions: ["rh-rostralanteriorcingulate", "rh-medialorbitofrontal", "rh-frontalpole"], view: { theta: -1.6, phi: 1.45 }, hide: "L",
-      card: "A thought that loops. It lives on the midline, where an electrode on the outside reads poorly. I don't have a readout for it yet." },
+      card: "A thought that loops is the third. It lives on the midline, where an electrode on the outside reads poorly, so the readout has to come from behaviour and the body first. My current thinking: start from the moment a loop begins, not from its content." },
     { key: "energy", label: "energy", regions: ["rh-caudalanteriorcingulate", "lh-caudalanteriorcingulate"], view: { theta: -1.6, phi: 1.4 }, hide: "L",
-      card: "Energy. Mostly a body signal: heart, breath, sleep debt. The scalp sees its shadow. Not something I'm working on." }
+      card: "Energy is the fourth and the least neural: heart, breath, sleep debt. The scalp sees only its shadow. My current thinking: this one is read from the body and nudged through the day's structure, not through the head." }
   ],
   build: {
     story: [
       "A hundred years ago bad eyesight was fate. Then someone measured it, ground a lens, and it stopped being a character flaw. We did the same for a bad knee, a weak heart, a slow thyroid: measure, correct, carry on.",
       "The mind never got that. Can't focus, can't sleep, a thought that loops: the advice is still to try harder.",
       "I want the same routine for mental states. Read the state from outside, nudge it at the right moment, see whether it moved. Not a treatment. A habit, like putting on glasses.",
-      "I started with focus because it is the one I can read first, with one electrode at the temple. Sleep and the looping thought are next, and I don't have the tools for them yet."
+      "I started with focus because it is the one I can read first, with one electrode at the temple."
     ],
     mechanics: [
       ["", "A closed loop has four parts. I'm building them in order."],
@@ -129,7 +130,7 @@ window.SITE = {
       ["Decision", "A per-person threshold on a slow, predictive feature, tuned for few false alarms rather than high recall. A push that comes too often is ignored within a week."],
       ["Lever", "One brief haptic pulse, only when the readout calls, only inside a block the person started. No continuous stimulation, no score to chase."],
       ["Test", "The one comparison that matters: the same number of pulses on a yoked random schedule. If timed does not beat random on the next minute of behaviour, there is no product, only a vibration."],
-      ["Scope", "Mental states, not neurological disease. Focus first because it has a behavioural ground truth every few seconds. Sleep has a readout and no lever that fits a routine. Rumination has neither, yet."]
+      ["Scope", "Mental states, not neurological disease. Focus first, because it has a behavioural ground truth every few seconds."]
     ],
     weather: [
       { key: "focus", word: "can't focus" },
@@ -137,7 +138,7 @@ window.SITE = {
       { key: "thought", word: "a thought that won't stop" },
       { key: "energy", word: "no energy" }
     ],
-    chips: { focus: "focus", sleep: "sleep", thought: "a thought that loops", energy: "energy" }
+    chips: {}
   },
   looking: "Three kinds of people: someone who has this problem and will tell me the truth about it, a PI with a dataset and a question, and someone who likes soldering as much as I do."
 };
