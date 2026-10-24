@@ -142,5 +142,5 @@ window.SITE = {
     ],
     chips: {}
   },
-  looking: "People who live with this, and people who study it."
+  looking: "Careful skeptics, curious people, and biohackers."
 };
