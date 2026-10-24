@@ -39,7 +39,9 @@ if (S.photo) { $('#who-photo').innerHTML = `<img src="${S.photo}" alt="Lucas Zha
 $('#looking-text').textContent = S.looking;
 $('#now-when').textContent = S.now.when;
 $('#now-lines').innerHTML = S.now.lines.map(l => `<li>${l}</li>`).join('');
-$('#now-photos').innerHTML = S.now.photos.map(p => `<figure>${p.src ? `<img src="${p.src}" alt="" loading="lazy">` : `<div class="ph">photo</div>`}<figcaption>${p.caption}</figcaption></figure>`).join('');
+const nowPhotos = (S.now.photos || []).filter(p => p.src);                       // empty until the photos exist; no placeholders on the live page
+$('#now-photos').innerHTML = nowPhotos.map(p => `<figure><img src="${p.src}" alt="" loading="lazy"><figcaption>${p.caption}</figcaption></figure>`).join('');
+if (!nowPhotos.length) $('#now-photos').hidden = true;
 if ($('#question-text')) $('#question-text').textContent = S.question || '';
 el.buildStory.innerHTML = S.build.story.map(t => `<p>${t}</p>`).join('');
 el.buildMech.innerHTML = S.build.mechanics.map(([h, t]) => `<p>${h ? `<b>${h}</b>` : ''}${t}</p>`).join('');
