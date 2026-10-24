@@ -475,9 +475,9 @@ function storyFrame(now) {
   });
   // beat 2: the frame arrives
   if (t > 3.2 && !story.frameShown) { story.frameShown = true; flyTo({ theta: -2.5, phi: 1.25, r: fit * 1.1, tx: 0, ty: 0, tz: 0 }, 1600); }
-  if (t > 4.2 && t < 7.6) { el.caption.textContent = 'A century ago, bad eyesight was fate.'; el.caption.classList.add('on'); }
+  if (t > 4.2 && t < 7.6) { el.caption.textContent = "If you hurt your leg, you don't just let it get worse."; el.caption.classList.add('on'); }
   // beat 3: the temple lights, the line writes, the colours come back
-  if (t > 7.6 && !story.paper) { story.paper = true; paperOn(true); el.caption.textContent = 'Measure it. See it change. Nudge it.'; const fk = byKey.get('focuskit'); pulse(fk.pieces); }
+  if (t > 7.6 && !story.paper) { story.paper = true; paperOn(true); el.caption.textContent = 'Read what state you\'re in, do one small thing about it, see whether it worked.'; const fk = byKey.get('focuskit'); pulse(fk.pieces); }
   if (t > 10.4 && !story.chips) { story.chips = true; el.caption.classList.remove('on'); Object.entries(S.build.chips).forEach(([k, txt]) => { const c = weatherEl(k, txt, true); c.style.opacity = 0; requestAnimationFrame(() => { c.style.opacity = 1; }); }); }
   if (t > 11.2) endStory(false);
 }

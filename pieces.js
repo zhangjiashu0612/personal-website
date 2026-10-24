@@ -119,20 +119,20 @@ window.SITE = {
   ],
   build: {
     story: [
-      "A hundred years ago bad eyesight was fate. Then someone measured it, ground a lens, and it stopped being a character flaw. We did the same for a bad knee, a weak heart, a slow thyroid: measure, correct, carry on.",
-      "The mind never got that. Can't focus, can't sleep, a thought that loops: the advice is still to try harder.",
-      "I want the same routine for mental states. Read the state from outside, nudge it at the right moment, see whether it moved. Not a treatment. A habit, like putting on glasses.",
-      "I started with focus because it is the one I can read first, with one electrode at the temple.",
-      "One more thing, and it matters more than the hardware. The attention economy works by other people reading you: what you look at, for how long, what keeps you there. That is a constraint someone else puts on you. What I want to build is a constraint you put on yourself. So the readout belongs to the person wearing it. It stays on the device and nobody else sees it. The point is to get your own attention back, not to hand it to anyone else."
+      "If you hurt your leg, you don't just let it get worse. You know there is surgery if it comes to that. If you're tired you rest. For the body we have a whole routine of noticing that something is off and doing something about it.",
+      "For the mind we mostly don't have that. When I can't start working, or can't sleep, or keep turning the same thought over, the honest answer about what to do is still to try harder, and maybe see someone if it gets bad enough. There is very little in between.",
+      "What I want to build is that in-between, a way to read what state you're in, do one small thing about it, and see whether it worked, as ordinary as eating when you're hungry. I don't mean treating a disease. I mean the everyday version, the way glasses are the everyday version of not seeing well.",
+      "I started with focus because it is the state I can actually measure right now, with one electrode at the temple, and because you can tell within seconds whether the nudge did anything.",
+      "There is one thing I care about more than the hardware. The attention economy already reads people all day, how long they stay, what pulls them back, and uses that to keep them there. That is other people deciding where your attention goes. I want to build the version where you decide. So the signal stays on the device and nobody else sees it. The whole reason for building this is to give you more control over your own head. Nobody else needs a window into it."
     ],
     mechanics: [
-      ["", "A closed loop has four parts. I'm building them in order."],
-      ["Readout", "One dry channel at the temple against an ear reference, on a consumer amplifier. The question is not whether lapses have an EEG signature in the lab; they do, seconds ahead. It is whether one dry channel on a head that moves keeps enough of it to time anything."],
-      ["Decision", "A per-person threshold on a slow, predictive feature, tuned for few false alarms rather than high recall. A push that comes too often is ignored within a week."],
-      ["Lever", "One brief haptic pulse, only when the readout calls, only inside a block the person started. No continuous stimulation, no score to chase."],
-      ["Test", "The one comparison that matters: the same number of pulses on a yoked random schedule. If timed does not beat random on the next minute of behaviour, there is no product, only a vibration."],
-      ["Scope", "Mental states, not neurological disease. Focus first, because it has a behavioural ground truth every few seconds."],
-      ["Privacy", "The signal never leaves the device. Detection and the decision to tap run on it, and the only thing that comes out is the tap. Nothing is uploaded by default and no account is needed to use it. Whatever someone chooses to share for research stays theirs to withdraw."]
+      ["", "There are four parts, and I'm building them in this order."],
+      ["Readout", "Dry electrodes at the mastoid and T7/T8, referenced to the ear, on a consumer amplifier for now. Lapses do show up in EEG a few seconds before they happen, at least in a lab, with gel electrodes and a still head. What I don't know yet is how much of that survives a dry channel on someone who is moving around. That is what I'm measuring first."],
+      ["Decision", "A threshold set per person on a slow feature that leads the lapse, tuned so it rarely fires when it shouldn't. I would rather miss some lapses than push too often. From the interviews I've done, people switch off anything that nags them within about a week."],
+      ["Lever", "I'm thinking about haptics for now, a short vibration, only when the readout says so, and only during a block of work the person started themselves. No score or streak to keep up."],
+      ["Test", "Compare it with the same number of vibrations delivered at random times. If a timed push doesn't do better than a random one on what the person does in the next minute, then it doesn't work, and I would rather know it now."],
+      ["Scope", "Ordinary mental states, not neurological disease. Focus first, because you can check it against behaviour every few seconds."],
+      ["Privacy", "Detection and the decision to push both run on the device. The only thing that leaves the frame is the tap itself. There is no account, and nothing is uploaded unless someone decides to share data for research, which they can take back."]
     ],
     weather: [
       { key: "focus", word: "can't focus" },
