@@ -45,7 +45,7 @@ window.SITE = {
       regions: ["lh-superiortemporal", "lh-bankssts", "lh-transversetemporal"],
       where: "Auditory and language cortex",
       blurb: "A replication of Tang et al. 2023, the fMRI language decoder, moved to MEG on the open MEG-MASC dataset. I started it in Google Colab in high school and ran three subjects during an internship at ECNU. The computer with those results is gone, so this year I rebuilt the pipeline from scratch and published it. A learning project, not a lab output.",
-      status: "A learning project, not a lab output.",
+      status: "Started in high school; rebuilt and published in 2026.",
       then: "I wanted to understand the Tang et al. pipeline by writing it myself. Nobody had put a MEG-to-text replication on MEG-MASC in public, so I did.",
       links: [{ label: "GitHub", href: "https://github.com/zhangjiashu0612/MEG-to-Text-decoding" }],
       signal: "meg" },
