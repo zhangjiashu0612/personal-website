@@ -122,7 +122,8 @@ window.SITE = {
       "A hundred years ago bad eyesight was fate. Then someone measured it, ground a lens, and it stopped being a character flaw. We did the same for a bad knee, a weak heart, a slow thyroid: measure, correct, carry on.",
       "The mind never got that. Can't focus, can't sleep, a thought that loops: the advice is still to try harder.",
       "I want the same routine for mental states. Read the state from outside, nudge it at the right moment, see whether it moved. Not a treatment. A habit, like putting on glasses.",
-      "I started with focus because it is the one I can read first, with one electrode at the temple."
+      "I started with focus because it is the one I can read first, with one electrode at the temple.",
+      "One more thing, and it matters more than the hardware. The attention economy works by other people reading you: what you look at, for how long, what keeps you there. That is a constraint someone else puts on you. What I want to build is a constraint you put on yourself. So the readout belongs to the person wearing it. It stays on the device and nobody else sees it. The point is to get your own attention back, not to hand it to anyone else."
     ],
     mechanics: [
       ["", "A closed loop has four parts. I'm building them in order."],
@@ -130,7 +131,8 @@ window.SITE = {
       ["Decision", "A per-person threshold on a slow, predictive feature, tuned for few false alarms rather than high recall. A push that comes too often is ignored within a week."],
       ["Lever", "One brief haptic pulse, only when the readout calls, only inside a block the person started. No continuous stimulation, no score to chase."],
       ["Test", "The one comparison that matters: the same number of pulses on a yoked random schedule. If timed does not beat random on the next minute of behaviour, there is no product, only a vibration."],
-      ["Scope", "Mental states, not neurological disease. Focus first, because it has a behavioural ground truth every few seconds."]
+      ["Scope", "Mental states, not neurological disease. Focus first, because it has a behavioural ground truth every few seconds."],
+      ["Privacy", "The signal never leaves the device. Detection and the decision to tap run on it, and the only thing that comes out is the tap. Nothing is uploaded by default and no account is needed to use it. Whatever someone chooses to share for research stays theirs to withdraw."]
     ],
     weather: [
       { key: "focus", word: "can't focus" },
@@ -140,5 +142,5 @@ window.SITE = {
     ],
     chips: {}
   },
-  looking: "Three kinds of people: someone who has this problem and will tell me the truth about it, a PI with a dataset and a question, and someone who likes soldering as much as I do."
+  looking: "People who live with this, and people who study it."
 };
