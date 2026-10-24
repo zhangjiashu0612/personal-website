@@ -6,11 +6,11 @@ const S = window.SITE;
 const $ = (s, el = document) => el.querySelector(s);
 const stage = $('#stage'), canvas = $('#brain');
 const el = {
-  loading: $('#loading'), counter: $('#counter'), caption: $('#caption'), hint: $('#hint'), labels: $('#labels'), weather: $('#weather'), mech: $('#mech'),
+  loading: $('#loading'), counter: $('#counter') || document.createElement('div'), caption: $('#caption'), hint: $('#hint'), labels: $('#labels'), weather: $('#weather'), mech: $('#mech'),
   float: $('#floatlabel'), tip: $('#regiontip'), views: $('#views'), card: $('#card'), cardClose: $('#card-close'),
   kicker: $('#card-kicker'), title: $('#card-title'), body: $('#card-body'), status: $('#card-status'),
   signal: $('#card-signal'), signalLabel: $('#card-signal-label'), links: $('#card-links'), paper: $('#paper'),
-  areas: $('#areas'), missingList: $('#missing-list'), choices: $('#choices'), statecard: $('#statecard'), statecardText: $('#statecard-text'),
+  areas: $('#areas'), missingList: $('#missing-list') || document.createElement('ol'), choices: $('#choices'), statecard: $('#statecard'), statecardText: $('#statecard-text'),
   buildStory: $('#build-story'), buildMech: $('#build-mech'), buildPicked: $('#build-picked'), buildTabs: $('#build-tabs')
 };
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -310,7 +310,7 @@ async function assemble(quick) {
     items.forEach(it => it.pieces.forEach(p => { p.pivot.visible = true; p.pivot.position.copy(p.center); p.pivot.quaternion.identity(); if (p.socket) p.socket.visible = false; }));
     missing.forEach(it => it.marker.classList.add('on'));
     Object.assign(cam, home()); Object.assign(goal, home()); flying = false;
-    el.caption.classList.remove('on'); el.counter.textContent = `${projects.length} pieces placed · ${missing.length} missing`;
+    el.caption.classList.remove('on');
     assembling = false; lastInput = performance.now() - 2500; applySection(true);
   };
   finishAssembly = finalState;
@@ -333,11 +333,7 @@ async function assemble(quick) {
     });
     await wait(ST);
   }
-  await wait(500); if (done) return;
-  el.caption.textContent = 'and what is missing';
-  await tween(900, k => { mats.dashMat.opacity = 0.9 * k; });
-  missing.forEach(it => it.marker.classList.add('on'));
-  await wait(700); if (!done) finalState();
+  await wait(500); if (!done) finalState();
 }
 
 // ---------- the glasses: his frame, docked where a face would be ----------
@@ -422,7 +418,6 @@ function chooseState(key, animate) {
   const st = key ? stateByKey.get(key) : null;
   el.statecard.hidden = !st; if (st) el.statecardText.textContent = st.card;
   el.buildPicked.hidden = !st; if (st) el.buildPicked.textContent = `You picked ${st.label}. Here is how it fits.`;
-  renderMissing(st ? st.missing : null);
   if (!renderer || !meshes.length) return;
   if (!st) { showHemis(true, true); camOwner = 'section'; applySection(true); return; }
   camOwner = 'state'; showHemis(st.hide !== 'L', st.hide !== 'R');
@@ -577,7 +572,7 @@ function applySection(force) {
 let scrollItem = null;
 function syncRows() {
   if (!em.done || !meshes.length) return;
-  const sec = activeId === 'work' ? $('#work') : activeId === 'missing' ? $('#missing') : null;
+  const sec = activeId === 'work' ? $('#work') : null;
   if (!sec) { if (scrollItem) { const was = scrollItem; scrollItem = null; if (hovered === was && hoverSource === 'scroll') hover(null, 'scroll'); } return; }
   const line = innerHeight * 0.42; let best = null, bd = 1e9;
   sec.querySelectorAll('.piece-list li').forEach(li => { const r = li.getBoundingClientRect(); const c = r.top + Math.min(r.height, 120) / 2; const d = Math.abs(c - line); if (d < bd) { bd = d; best = li; } });
